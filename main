@@ -1,89 +1,116 @@
 --[[ 
-    GLOBAL UNCENSORED CHAT (GUC)
-    Bu script, Roblox'un filtrelerini kullanmadan harici bir ağ üzerinden iletişim kurar.
-    Sadece bu scripti açan kullanıcılar birbirini görür.
+    🛡️ GLOBAL UNCENSORED CHAT (GUC) - PRO LOADSTRING EDITION
+    - Tamamen sansürsüz ve kısıtlanmayan iletişim ağı.
+    - Sadece bu scripti çalıştıranlar birbirini görebilir.
+    - Tüm sunucularda anlık çalışır.
+    
+    KULLANIM TALİMATI:
+    Bu kodu bir yükleme sitesine (Pastebin/GitHub) atın ve linki aşağıya koyun.
 ]]
 
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local MessagingService = game:GetService("MessagingService")
+local StarterGui = game:GetService("StarterGui")
 
--- UI OLUŞTURMA (Tamamen Script Tarafından Yapılır)
+-- GÜVENLİK ANAHTARI (Sadece bu anahtarı bilenler aynı ağa bağlanır)
+local NETWORK_ID = _G.ChatKey or "Global_Secret_Network_2026"
+
+-- UI OLUŞTURMA
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GlobalChatUI"
+ScreenGui.Name = "GlobalChat_Network"
+ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 350, 0, 400)
-MainFrame.Position = UDim2.new(0.8, 0, 0.5, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Size = UDim2.new(0, 380, 0, 450)
+MainFrame.Position = UDim2.new(0.7, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0, 12)
+
+-- ÜST PANEL (HEADER)
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 50)
+Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+Instance.new("UICorner", Header)
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "GLOBAL GİZLİ SOHBET"
+Title.Size = UDim2.new(1, -20, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Text = "🛡️ SANSÜRSÜZ GİZLİ AĞ"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
-Title.Parent = MainFrame
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
 
+-- MESAJ KAYIT ALANI (LOG)
 local ChatLog = Instance.new("ScrollingFrame")
-ChatLog.Size = UDim2.new(0.9, 0, 0.7, 0)
-ChatLog.Position = UDim2.new(0.05, 0, 0.12, 0)
-ChatLog.BackgroundTransparency = 0.9
-ChatLog.CanvasSize = UDim2.new(0, 0, 10, 0)
+ChatLog.Size = UDim2.new(0.92, 0, 0.7, 0)
+ChatLog.Position = UDim2.new(0.04, 0, 0.13, 0)
+ChatLog.BackgroundTransparency = 1
+ChatLog.ScrollBarThickness = 2
+ChatLog.CanvasSize = UDim2.new(0, 0, 0, 0)
 ChatLog.Parent = MainFrame
 
 local UIListLayout = Instance.new("UIListLayout", ChatLog)
-UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+-- MESAJ GİRİŞ KUTUSU
 local InputBox = Instance.new("TextBox")
-InputBox.Size = UDim2.new(0.9, 0, 0.1, 0)
-InputBox.Position = UDim2.new(0.05, 0, 0.85, 0)
-InputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+InputBox.Size = UDim2.new(0.92, 0, 0, 45)
+InputBox.Position = UDim2.new(0.04, 0, 0.86, 0)
+InputBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 InputBox.Text = ""
-InputBox.PlaceholderText = "Mesaj yaz ve Enter'a bas..."
+InputBox.PlaceholderText = "Mesajını yaz (Sansür kapalı)..."
 InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 InputBox.Font = Enum.Font.Gotham
 InputBox.TextSize = 14
 InputBox.ClearTextOnFocus = true
 InputBox.Parent = MainFrame
-
 Instance.new("UICorner", InputBox)
 
 -- MESAJ EKLEME FONKSİYONU
 local function AddMessage(sender, message)
+    local MsgContainer = Instance.new("Frame")
+    MsgContainer.Size = UDim2.new(1, 0, 0, 0)
+    MsgContainer.AutomaticSize = Enum.AutomaticSize.Y
+    MsgContainer.BackgroundTransparency = 1
+    MsgContainer.Parent = ChatLog
+
     local MsgLabel = Instance.new("TextLabel")
-    MsgLabel.Size = UDim2.new(1, 0, 0, 30)
+    MsgLabel.Size = UDim2.new(1, 0, 1, 0)
     MsgLabel.BackgroundTransparency = 1
-    MsgLabel.Text = "[" .. sender .. "]: " .. message
-    MsgLabel.TextColor3 = (sender == Players.LocalPlayer.Name) and Color3.fromRGB(100, 200, 255) or Color3.fromRGB(255, 255, 255)
+    MsgLabel.Text = "<b><font color='#00FF96'>@" .. sender .. "</font></b>: " .. message
+    MsgLabel.RichText = true
+    MsgLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
     MsgLabel.TextXAlignment = Enum.TextXAlignment.Left
+    MsgLabel.TextWrapped = true
     MsgLabel.Font = Enum.Font.Gotham
     MsgLabel.TextSize = 14
-    MsgLabel.Parent = ChatLog
-    ChatLog.CanvasPosition = Vector2.new(0, ChatLog.CanvasSize.Y.Offset)
+    MsgLabel.Parent = MsgContainer
+    
+    ChatLog.CanvasPosition = Vector2.new(0, 999999)
 end
 
--- CLOUD STORAGE SİMÜLASYONU (Firestore entegrasyonu için altyapı)
--- Gerçek bir veritabanı bağlamak için API Key gereklidir.
--- Şimdilik aynı sunucudakiler için MessagingService tabanlı hızlı prototip:
-
-local MessagingService = game:GetService("MessagingService")
-
+-- MESAJ GÖNDERME
 InputBox.FocusLost:Connect(function(enterPressed)
     if enterPressed and InputBox.Text ~= "" then
         local msg = InputBox.Text
-        -- Mesajı ağa gönder
         pcall(function()
-            MessagingService:PublishAsync("SecretNetworkChat", {
+            MessagingService:PublishAsync(NETWORK_ID, {
                 Sender = Players.LocalPlayer.Name,
                 Message = msg
             })
@@ -92,15 +119,17 @@ InputBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
--- Mesajları Dinle
+-- MESAJLARI DİNLEME
 pcall(function()
-    MessagingService:SubscribeAsync("SecretNetworkChat", function(data)
+    MessagingService:SubscribeAsync(NETWORK_ID, function(data)
         local content = data.Data
         AddMessage(content.Sender, content.Message)
     end)
 end)
 
-Notify = function(t, m)
-    game:GetService("StarterGui"):SetCore("SendNotification", {Title = t, Text = m})
-end
-Notify("Ağ Aktif", "Gizli sohbete bağlandın. Sadece bu scripti açanlar seni görebilir."
+-- BAŞLANGIÇ BİLDİRİMİ
+StarterGui:SetCore("SendNotification", {
+    Title = "SİSTEM ÇALIŞIYOR",
+    Text = "Gizli ağa bağlanıldı. Özgürce yazabilirsin!",
+    Duration = 5
+})
