@@ -4,8 +4,8 @@
     - Sadece bu scripti çalıştıranlar birbirini görebilir.
     - Tüm sunucularda anlık çalışır.
     
-    KULLANIM TALİMATI:
-    Bu kodu bir yükleme sitesine (Pastebin/GitHub) atın ve linki aşağıya koyun.
+    KULLANIM (Loadstring):
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/KullaniciAdin/Repo/main/chat.lua"))()
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -15,121 +15,120 @@ local Players = game:GetService("Players")
 local MessagingService = game:GetService("MessagingService")
 local StarterGui = game:GetService("StarterGui")
 
--- GÜVENLİK ANAHTARI (Sadece bu anahtarı bilenler aynı ağa bağlanır)
+-- GÜVENLİK ANAHTARI
 local NETWORK_ID = _G.ChatKey or "Global_Secret_Network_2026"
 
 -- UI OLUŞTURMA
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GlobalChat_Network"
+ScreenGui.Name = "Z_GlobalChat"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 450)
-MainFrame.Position = UDim2.new(0.7, 0, 0.3, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+local Panel = Instance.new("Frame")
+Panel.Name = "ChatPanel"
+Panel.Size = UDim2.new(0, 380, 0, 420)
+Panel.Position = UDim2.new(0.7, 0, 0.3, 0)
+Panel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Panel.BorderSizePixel = 0
+Panel.Active = true
+Panel.Draggable = true
+Panel.Parent = ScreenGui
 
-local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0, 12)
+local UICorner = Instance.new("UICorner", Panel)
+UICorner.CornerRadius = UDim.new(0, 10)
 
--- ÜST PANEL (HEADER)
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 50)
-Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Header.BorderSizePixel = 0
-Header.Parent = MainFrame
-Instance.new("UICorner", Header)
+-- ÜST BAR
+local TopBar = Instance.new("Frame")
+TopBar.Name = "Header"
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = Panel
+Instance.new("UICorner", TopBar)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Text = "🛡️ SANSÜRSÜZ GİZLİ AĞ"
+Title.Text = "🛡️ SANSÜRSÜZ GLOBAL SOHBET"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 15
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
+Title.Parent = TopBar
 
--- MESAJ KAYIT ALANI (LOG)
-local ChatLog = Instance.new("ScrollingFrame")
-ChatLog.Size = UDim2.new(0.92, 0, 0.7, 0)
-ChatLog.Position = UDim2.new(0.04, 0, 0.13, 0)
-ChatLog.BackgroundTransparency = 1
-ChatLog.ScrollBarThickness = 2
-ChatLog.CanvasSize = UDim2.new(0, 0, 0, 0)
-ChatLog.Parent = MainFrame
+-- MESAJ ALANI
+local Box = Instance.new("ScrollingFrame")
+Box.Name = "Messages"
+Box.Size = UDim2.new(0.92, 0, 0.7, 0)
+Box.Position = UDim2.new(0.04, 0, 0.13, 0)
+Box.BackgroundTransparency = 1
+Box.ScrollBarThickness = 2
+Box.CanvasSize = UDim2.new(0, 0, 0, 0)
+Box.Parent = Panel
 
-local UIListLayout = Instance.new("UIListLayout", ChatLog)
-UIListLayout.Padding = UDim.new(0, 10)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local Layout = Instance.new("UIListLayout", Box)
+Layout.Padding = UDim.new(0, 8)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- MESAJ GİRİŞ KUTUSU
-local InputBox = Instance.new("TextBox")
-InputBox.Size = UDim2.new(0.92, 0, 0, 45)
-InputBox.Position = UDim2.new(0.04, 0, 0.86, 0)
-InputBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-InputBox.Text = ""
-InputBox.PlaceholderText = "Mesajını yaz (Sansür kapalı)..."
-InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-InputBox.Font = Enum.Font.Gotham
-InputBox.TextSize = 14
-InputBox.ClearTextOnFocus = true
-InputBox.Parent = MainFrame
-Instance.new("UICorner", InputBox)
+-- GİRİŞ KUTUSU
+local Input = Instance.new("TextBox")
+Input.Name = "ChatInput"
+Input.Size = UDim2.new(0.92, 0, 0, 40)
+Input.Position = UDim2.new(0.04, 0, 0.86, 0)
+Input.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Input.Text = ""
+Input.PlaceholderText = "Mesajını buraya yaz..."
+Input.TextColor3 = Color3.fromRGB(255, 255, 255)
+Input.Font = Enum.Font.Gotham
+Input.TextSize = 14
+Input.ClearTextOnFocus = true
+Input.Parent = Panel
+Instance.new("UICorner", Input)
 
--- MESAJ EKLEME FONKSİYONU
-local function AddMessage(sender, message)
-    local MsgContainer = Instance.new("Frame")
-    MsgContainer.Size = UDim2.new(1, 0, 0, 0)
-    MsgContainer.AutomaticSize = Enum.AutomaticSize.Y
-    MsgContainer.BackgroundTransparency = 1
-    MsgContainer.Parent = ChatLog
-
-    local MsgLabel = Instance.new("TextLabel")
-    MsgLabel.Size = UDim2.new(1, 0, 1, 0)
-    MsgLabel.BackgroundTransparency = 1
-    MsgLabel.Text = "<b><font color='#00FF96'>@" .. sender .. "</font></b>: " .. message
-    MsgLabel.RichText = true
-    MsgLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    MsgLabel.TextXAlignment = Enum.TextXAlignment.Left
-    MsgLabel.TextWrapped = true
-    MsgLabel.Font = Enum.Font.Gotham
-    MsgLabel.TextSize = 14
-    MsgLabel.Parent = MsgContainer
+-- MESAJ EKLEME
+local function NewMsg(user, text)
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 0, 0)
+    Label.AutomaticSize = Enum.AutomaticSize.Y
+    Label.BackgroundTransparency = 1
+    Label.Text = "<b><font color='#00FFAA'>@" .. user .. "</font></b>: " .. text
+    Label.RichText = true
+    Label.TextColor3 = Color3.fromRGB(240, 240, 240)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.TextWrapped = true
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 14
+    Label.Parent = Box
     
-    ChatLog.CanvasPosition = Vector2.new(0, 999999)
+    Box.CanvasPosition = Vector2.new(0, 999999)
 end
 
--- MESAJ GÖNDERME
-InputBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed and InputBox.Text ~= "" then
-        local msg = InputBox.Text
+-- GÖNDERME
+Input.FocusLost:Connect(function(enter)
+    if enter and Input.Text ~= "" then
+        local content = Input.Text
         pcall(function()
             MessagingService:PublishAsync(NETWORK_ID, {
-                Sender = Players.LocalPlayer.Name,
-                Message = msg
+                User = Players.LocalPlayer.Name,
+                Msg = content
             })
         end)
-        InputBox.Text = ""
+        Input.Text = ""
     end
 end)
 
--- MESAJLARI DİNLEME
+-- DİNLEME
 pcall(function()
     MessagingService:SubscribeAsync(NETWORK_ID, function(data)
-        local content = data.Data
-        AddMessage(content.Sender, content.Message)
+        local raw = data.Data
+        NewMsg(raw.User, raw.Msg)
     end)
 end)
 
--- BAŞLANGIÇ BİLDİRİMİ
+-- BİLDİRİM
 StarterGui:SetCore("SendNotification", {
-    Title = "SİSTEM ÇALIŞIYOR",
-    Text = "Gizli ağa bağlanıldı. Özgürce yazabilirsin!",
-    Duration = 5
+    Title = "Sohbet Hazır",
+    Text = "Ağa bağlandın, artık özgürsün!",
+    Duration = 3
 })
