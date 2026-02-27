@@ -1,8 +1,8 @@
 --[[ 
-    🛡️ GLOBAL UNCENSORED CHAT (GUC) - PRO LOADSTRING EDITION
-    - Tamamen sansürsüz ve kısıtlanmayan iletişim ağı.
-    - Sadece bu scripti çalıştıranlar birbirini görebilir.
-    - Tüm sunucularda anlık çalışır.
+    🛡️ GLOBAL UNCENSORED CHAT (GUC) - PREMIUM UI EDITION
+    - Tamamen sansürsüz iletişim ağı.
+    - CoreGui entegrasyonlu modern "Chat Butonu".
+    - RichText, Sürükleme ve Dinamik Animasyonlar.
     
     KULLANIM (Loadstring):
     loadstring(game:HttpGet("https://raw.githubusercontent.com/KullaniciAdin/Repo/main/chat.lua"))()
@@ -13,122 +13,195 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local MessagingService = game:GetService("MessagingService")
-local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 
 -- GÜVENLİK ANAHTARI
 local NETWORK_ID = _G.ChatKey or "Global_Secret_Network_2026"
 
--- UI OLUŞTURMA
+-- UI ROOT (CoreGui'ye bağlı)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Z_GlobalChat"
+ScreenGui.Name = "Ultra_GlobalChat_V4"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
+ScreenGui.DisplayOrder = 999
+ScreenGui.Parent = CoreGui
 
-local Panel = Instance.new("Frame")
-Panel.Name = "ChatPanel"
-Panel.Size = UDim2.new(0, 380, 0, 420)
-Panel.Position = UDim2.new(0.7, 0, 0.3, 0)
-Panel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Panel.BorderSizePixel = 0
-Panel.Active = true
-Panel.Draggable = true
-Panel.Parent = ScreenGui
+-- CHAT AÇMA BUTONU
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ChatToggle"
+ToggleButton.Parent = ScreenGui
+ToggleButton.Size = UDim2.new(0, 60, 0, 60)
+ToggleButton.Position = UDim2.new(0, 25, 0.85, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
+ToggleButton.Text = "💬"
+ToggleButton.TextSize = 30
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.AutoButtonColor = true
+ToggleButton.ZIndex = 10
 
-local UICorner = Instance.new("UICorner", Panel)
-UICorner.CornerRadius = UDim.new(0, 10)
+local BtnCorner = Instance.new("UICorner", ToggleButton)
+BtnCorner.CornerRadius = UDim.new(1, 0)
 
--- ÜST BAR
-local TopBar = Instance.new("Frame")
-TopBar.Name = "Header"
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = Panel
-Instance.new("UICorner", TopBar)
+local BtnStroke = Instance.new("UIStroke", ToggleButton)
+BtnStroke.Color = Color3.fromRGB(255, 255, 255)
+BtnStroke.Thickness = 2
+BtnStroke.Transparency = 0.4
+
+-- ANA PANEL
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainPanel"
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 400, 0, 480)
+MainFrame.Position = UDim2.new(0, 100, 0.85, -480)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false 
+MainFrame.ClipsDescendants = true
+
+local MainCorner = Instance.new("UICorner", MainFrame)
+MainCorner.CornerRadius = UDim.new(0, 20)
+
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = Color3.fromRGB(40, 40, 40)
+MainStroke.Thickness = 1
+
+-- HEADER (ÜST BAR)
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 60)
+Header.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner", Header)
+HeaderCorner.CornerRadius = UDim.new(0, 20)
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -20, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Text = "🛡️ SANSÜRSÜZ GLOBAL SOHBET"
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 20, 0, 0)
+Title.Text = "🛡️ SANSÜRSÜZ GLOBAL AĞ"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 15
+Title.TextSize = 17
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
+Title.Parent = Header
 
--- MESAJ ALANI
-local Box = Instance.new("ScrollingFrame")
-Box.Name = "Messages"
-Box.Size = UDim2.new(0.92, 0, 0.7, 0)
-Box.Position = UDim2.new(0.04, 0, 0.13, 0)
-Box.BackgroundTransparency = 1
-Box.ScrollBarThickness = 2
-Box.CanvasSize = UDim2.new(0, 0, 0, 0)
-Box.Parent = Panel
+-- MESAJ KAYDI (LOG)
+local ChatLog = Instance.new("ScrollingFrame")
+ChatLog.Name = "ChatLog"
+ChatLog.Size = UDim2.new(0.92, 0, 0.68, 0)
+ChatLog.Position = UDim2.new(0.04, 0, 0.15, 0)
+ChatLog.BackgroundTransparency = 1
+ChatLog.ScrollBarThickness = 2
+ChatLog.CanvasSize = UDim2.new(0, 0, 0, 0)
+ChatLog.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 170)
+ChatLog.Parent = MainFrame
 
-local Layout = Instance.new("UIListLayout", Box)
-Layout.Padding = UDim.new(0, 8)
-Layout.SortOrder = Enum.SortOrder.LayoutOrder
+local UIListLayout = Instance.new("UIListLayout", ChatLog)
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- GİRİŞ KUTUSU
-local Input = Instance.new("TextBox")
-Input.Name = "ChatInput"
-Input.Size = UDim2.new(0.92, 0, 0, 40)
-Input.Position = UDim2.new(0.04, 0, 0.86, 0)
-Input.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Input.Text = ""
-Input.PlaceholderText = "Mesajını buraya yaz..."
-Input.TextColor3 = Color3.fromRGB(255, 255, 255)
-Input.Font = Enum.Font.Gotham
-Input.TextSize = 14
-Input.ClearTextOnFocus = true
-Input.Parent = Panel
-Instance.new("UICorner", Input)
+-- INPUT AREA (MESAJ YAZMA)
+local InputBox = Instance.new("TextBox")
+InputBox.Name = "MessageInput"
+InputBox.Size = UDim2.new(0.92, 0, 0, 50)
+InputBox.Position = UDim2.new(0.04, 0, 0.86, 0)
+InputBox.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+InputBox.Text = ""
+InputBox.PlaceholderText = "Filtresiz mesajını buraya yaz..."
+InputBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+InputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+InputBox.Font = Enum.Font.Gotham
+InputBox.TextSize = 15
+InputBox.ClearTextOnFocus = true
+InputBox.Parent = MainFrame
 
--- MESAJ EKLEME
-local function NewMsg(user, text)
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 0, 0)
-    Label.AutomaticSize = Enum.AutomaticSize.Y
-    Label.BackgroundTransparency = 1
-    Label.Text = "<b><font color='#00FFAA'>@" .. user .. "</font></b>: " .. text
-    Label.RichText = true
-    Label.TextColor3 = Color3.fromRGB(240, 240, 240)
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.TextWrapped = true
-    Label.Font = Enum.Font.Gotham
-    Label.TextSize = 14
-    Label.Parent = Box
-    
-    Box.CanvasPosition = Vector2.new(0, 999999)
-end
+local InputCorner = Instance.new("UICorner", InputBox)
+InputCorner.CornerRadius = UDim.new(0, 10)
 
--- GÖNDERME
-Input.FocusLost:Connect(function(enter)
-    if enter and Input.Text ~= "" then
-        local content = Input.Text
-        pcall(function()
-            MessagingService:PublishAsync(NETWORK_ID, {
-                User = Players.LocalPlayer.Name,
-                Msg = content
-            })
-        end)
-        Input.Text = ""
+local InputStroke = Instance.new("UIStroke", InputBox)
+InputStroke.Color = Color3.fromRGB(50, 50, 50)
+InputStroke.Thickness = 1
+
+-- TOGGLE ANIMASYONU VE MANTIĞI
+ToggleButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    if MainFrame.Visible then
+        MainFrame.Position = UDim2.new(0, 100, 0.85, -400) -- Başlangıç konumu (Alttan gelecek)
+        MainFrame:TweenPosition(UDim2.new(0, 100, 0.85, -480), "Out", "Quart", 0.4, true)
+        ToggleButton.Text = "❌"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    else
+        ToggleButton.Text = "💬"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
     end
 end)
 
--- DİNLEME
+-- MESAJ EKLEME FONKSİYONU
+local function AddMessage(sender, message)
+    local MsgLabel = Instance.new("TextLabel")
+    MsgLabel.Size = UDim2.new(1, 0, 0, 0)
+    MsgLabel.AutomaticSize = Enum.AutomaticSize.Y
+    MsgLabel.BackgroundTransparency = 1
+    MsgLabel.Text = "<b><font color='#00FFCC'>@" .. sender .. "</font></b>: " .. message
+    MsgLabel.RichText = true
+    MsgLabel.TextColor3 = Color3.fromRGB(245, 245, 245)
+    MsgLabel.TextXAlignment = Enum.TextXAlignment.Left
+    MsgLabel.TextWrapped = true
+    MsgLabel.Font = Enum.Font.Gotham
+    MsgLabel.TextSize = 15
+    MsgLabel.Parent = ChatLog
+    
+    ChatLog.CanvasPosition = Vector2.new(0, 999999)
+end
+
+-- MESAJ GÖNDERME
+InputBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed and InputBox.Text ~= "" then
+        local msg = InputBox.Text
+        pcall(function()
+            MessagingService:PublishAsync(NETWORK_ID, {
+                Sender = Players.LocalPlayer.Name,
+                Message = msg
+            })
+        end)
+        InputBox.Text = ""
+    end
+end)
+
+-- MESAJLARI DİNLE
 pcall(function()
     MessagingService:SubscribeAsync(NETWORK_ID, function(data)
-        local raw = data.Data
-        NewMsg(raw.User, raw.Msg)
+        local content = data.Data
+        AddMessage(content.Sender, content.Message)
     end)
 end)
 
--- BİLDİRİM
-StarterGui:SetCore("SendNotification", {
-    Title = "Sohbet Hazır",
-    Text = "Ağa bağlandın, artık özgürsün!",
-    Duration = 3
-})
+-- SÜRÜKLEME (DRAG) FONKSİYONU
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then update(input) end
+end)
