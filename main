@@ -1,148 +1,169 @@
+--[[
+    ALCHEMY GARDEN - FULL WEBHOOK STOCK BOT SYSTEM
+    - Otomatik Eşya Tespit (Dynamic Item Detection)
+    - Dex Kontrollü Derin Tarama
+    - Rayfield Hub Entegrasyonu
+    - Webhook Bot Formatlı Raporlama
+]]--
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local HttpService = game:GetService("HttpService")
 
 -- CONFIG
 local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1478024862718103673/KaXBdzHd5KOzltQuHWG6BWcYETFSNzsoPnC5BZPCK3o7eYwI1MEJ32KFolfTkQwpaJwl"
+local BOT_NAME = "Alchemy Stock Bot"
+local REFRESH_TIME = 60 -- Her 60 saniyede bir otomatik stok kontrolü ve webhook
 
--- 1. ALCHEMY MATH KEY SYSTEM (Giriş Ekranı)
+-- 1. KEY SYSTEM (Giriş Ekranı - Alchemy Style)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local MainFrame = Instance.new("Frame", ScreenGui)
-local n1, n2 = math.random(12, 45), math.random(3, 9)
+local n1, n2 = math.random(10, 50), math.random(5, 15)
 local dogru_cevap = n1 * n2
 
--- UI Tasarımı (Alchemy Style)
-MainFrame.Size = UDim2.new(0, 340, 0, 230)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -115)
+MainFrame.Size = UDim2.new(0, 330, 0, 230)
+MainFrame.Position = UDim2.new(0.5, -165, 0.5, -115)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Text = "ALCHEMY HUB\nStock Bot Verification"
+Title.Size = UDim2.new(1, 0, 0, 60)
+Title.TextColor3 = Color3.fromRGB(0, 255, 127)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+Title.BackgroundTransparency = 1
 
 local GrayBox = Instance.new("Frame", MainFrame)
-GrayBox.Size = UDim2.new(0.85, 0, 0, 55)
-GrayBox.Position = UDim2.new(0.075, 0, 0.4, 0)
-GrayBox.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+GrayBox.Size = UDim2.new(0.85, 0, 0, 50)
+GrayBox.Position = UDim2.new(0.075, 0, 0.45, 0)
+GrayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Instance.new("UICorner", GrayBox)
 
-local QuestionText = Instance.new("TextLabel", GrayBox)
-QuestionText.Text = "  Soru: " .. n1 .. " x " .. n2 .. " ="
-QuestionText.TextColor3 = Color3.new(0, 0, 0) -- SİYAH YAZI
-QuestionText.Font = Enum.Font.GothamBold
-QuestionText.TextSize = 18
-QuestionText.Size = UDim2.new(0.45, 0, 1, 0)
-QuestionText.BackgroundTransparency = 1
-QuestionText.TextXAlignment = Enum.TextXAlignment.Left
+local Question = Instance.new("TextLabel", GrayBox)
+Question.Text = "  " .. n1 .. " x " .. n2 .. " ="
+Question.TextColor3 = Color3.new(0, 0, 0) -- Siyah yazı
+Question.Font = Enum.Font.GothamBold
+Question.Size = UDim2.new(0.4, 0, 1, 0)
+Question.BackgroundTransparency = 1
+Question.TextXAlignment = Enum.TextXAlignment.Left
 
-local AnswerBox = Instance.new("TextBox", GrayBox)
-AnswerBox.Size = UDim2.new(0.5, 0, 0.8, 0)
-AnswerBox.Position = UDim2.new(0.48, 0, 0.1, 0)
-AnswerBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-AnswerBox.TextColor3 = Color3.fromRGB(0, 255, 127)
-AnswerBox.Font = Enum.Font.GothamBold
-AnswerBox.PlaceholderText = "Cevap..."
-AnswerBox.Text = ""
-Instance.new("UICorner", AnswerBox)
+local Input = Instance.new("TextBox", GrayBox)
+Input.Size = UDim2.new(0.5, 0, 0.8, 0)
+Input.Position = UDim2.new(0.45, 0, 0.1, 0)
+Input.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Input.TextColor3 = Color3.fromRGB(0, 255, 127)
+Input.PlaceholderText = "Cevap?"
+Input.Text = ""
+Instance.new("UICorner", Input)
 
 local VerifyBtn = Instance.new("TextButton", MainFrame)
 VerifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.075, 0, 0.75, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-VerifyBtn.Text = "DOĞRULA VE GİRİŞ YAP"
+VerifyBtn.Text = "BOTU BAŞLAT"
 VerifyBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", VerifyBtn)
 
--- 2. DEX KONTROLLÜ STOK MOTORU (Fix: Stok Var/Yok Sorunu Çözüldü)
-local function FetchDeepStock(folderName)
-    local results = {}
-    -- Dex görüntüsündeki yol: ReplicatedStorage.Shop.ShopData
-    local shopPath = game:GetService("ReplicatedStorage"):FindFirstChild("Shop")
-    local dataFolder = shopPath and shopPath:FindFirstChild("ShopData") and shopPath.ShopData:FindFirstChild(folderName)
-
-    if dataFolder then
-        for _, item in pairs(dataFolder:GetChildren()) do
-            -- Stok değerini bulmak için 3 farklı yöntemi dene (Bypass kontrolü)
-            local amount = 0
-            local valObj = item:FindFirstChild("Amount") or item:FindFirstChild("Stock") or item:FindFirstChild("Value")
+-- 2. STOCK BOT MOTORU (Dex Kontrollü)
+local function ScanShop(category)
+    local items = {}
+    -- Dex Görüntüsü Yolu: ReplicatedStorage > Shop > ShopData
+    local shopData = game:GetService("ReplicatedStorage"):FindFirstChild("Shop") 
+        and game:GetService("ReplicatedStorage").Shop:FindFirstChild("ShopData")
+    
+    local folder = shopData and shopData:FindFirstChild(category)
+    
+    if folder then
+        for _, item in pairs(folder:GetChildren()) do
+            -- Stok miktarını bulma (Farklı değer tiplerini kontrol eder)
+            local stockCount = 0
+            local amountObj = item:FindFirstChild("Amount") or item:FindFirstChild("Value") or item:FindFirstChild("Stock")
             
-            if valObj and (valObj:IsA("IntValue") or valObj:IsA("NumberValue")) then
-                amount = valObj.Value
+            if amountObj then
+                stockCount = amountObj.Value
             elseif item:IsA("IntValue") or item:IsA("NumberValue") then
-                amount = item.Value
+                stockCount = item.Value
             else
-                -- Eğer değer objesi yoksa ama item oradaysa en azından 1 tane olduğunu varsay
-                amount = "Mevcut" 
+                stockCount = "Aktif" -- Miktar bulunamazsa ama obje oradaysa
             end
             
-            results[item.Name] = amount
+            items[item.Name] = stockCount
         end
     end
-    return results
+    return items
 end
 
--- 3. WEBHOOK RAPORLAYICI
-local function PushToDiscord(seeds, gears)
-    local sMsg, gMsg = "", ""
-    for k, v in pairs(seeds) do sMsg = sMsg .. "🌱 **" .. k .. "**: " .. v .. "\n" end
-    for k, v in pairs(gears) do gMsg = gMsg .. "⚙️ **" .. k .. "**: " .. v .. "\n" end
+-- 3. WEBHOOK BOT GÖNDERİCİ
+local function PostWebhook(seeds, gears)
+    local seedList = ""
+    local gearList = ""
 
-    local embed = {
-        ["title"] = "📦 Garden Horizons - Anlık Stok Raporu",
-        ["color"] = 0x00FF7F,
-        ["fields"] = {
-            {["name"] = "Seeds", ["value"] = sMsg ~= "" and sMsg or "Bulunamadı", ["inline"] = true},
-            {["name"] = "Gears", ["value"] = gMsg ~= "" and gMsg or "Bulunamadı", ["inline"] = true}
-        },
-        ["footer"] = {["text"] = "Alchemy Hub | Dex Verified System"}
+    for name, qty in pairs(seeds) do seedList = seedList .. "🌱 **" .. name .. "**: `" .. qty .. "`\n" end
+    for name, qty in pairs(gears) do gearList = gearList .. "⚙️ **" .. name .. "**: `" .. qty .. "`\n" end
+
+    local payload = {
+        ["username"] = BOT_NAME,
+        ["avatar_url"] = "https://i.imgur.com/8Nf9X7S.png",
+        ["embeds"] = {{
+            ["title"] = "📊 Canlı Stok Güncellemesi",
+            ["description"] = "Aşağıdaki ürünler Garden Horizons Shop üzerinde tespit edildi.",
+            ["color"] = 0x00FF7F,
+            ["fields"] = {
+                {["name"] = "Tohum Stokları (Seeds)", ["value"] = seedList ~= "" and seedList or "❌ Veri Yok", ["inline"] = false},
+                {["name"] = "Ekipman Stokları (Gears)", ["value"] = gearList ~= "" and gearList or "❌ Veri Yok", ["inline"] = false}
+            },
+            ["footer"] = {["text"] = "Alchemy Hub | Otomatik Bot Kontrolü"}
+        }}
     }
 
-    local req = (syn and syn.request or http_request or request)
-    if req then
-        req({
+    local request = (syn and syn.request or http_request or request)
+    if request then
+        request({
             Url = WEBHOOK_URL,
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
-            Body = HttpService:JSONEncode({["embeds"] = {embed}})
+            Body = HttpService:JSONEncode(payload)
         })
     end
 end
 
--- 4. RAYFIELD HUB & AYRI SEKMELER
-local function LoadHub()
+-- 4. ANA PANEL (RAYFIELD)
+local function InitHub()
     local Window = Rayfield:CreateWindow({
-        Name = "Alchemy Garden | Stock Hub",
-        LoadingTitle = "Dex Verileri Senkronize Ediliyor...",
+        Name = "Alchemy Garden | Stock Bot",
+        LoadingTitle = "Dex Verileri Taranıyor...",
         ConfigurationSaving = { Enabled = false }
     })
 
-    local SeedTab = Window:CreateTab("🌱 Seeds", 4483362458)
-    local GearTab = Window:CreateTab("⚙️ Gears", 4483362458)
-
-    local function Refresh()
-        local seeds = FetchDeepStock("SeedShopData")
-        local gears = FetchDeepStock("GearShopData")
-        
-        -- UI Etiketlerini Oluştur (Basit yenileme)
-        SeedTab:CreateSection("Mevcut Tohumlar")
-        for n, a in pairs(seeds) do SeedTab:CreateLabel(n .. ": " .. a) end
-        
-        GearTab:CreateSection("Mevcut Ekipmanlar")
-        for n, a in pairs(gears) do GearTab:CreateLabel(n .. ": " .. a) end
-
-        PushToDiscord(seeds, gears)
-    end
-
-    Refresh()
-    Rayfield:Notify({Title = "Sistem Aktif", Content = "Stoklar Discord'a Gönderildi!", Duration = 3})
+    local MainTab = Window:CreateTab("📦 Canlı Rapor", 4483362458)
+    
+    task.spawn(function()
+        while true do
+            local seeds = ScanShop("SeedShopData")
+            local gears = ScanShop("GearShopData")
+            
+            -- Discord'a Raporla
+            PostWebhook(seeds, gears)
+            
+            Rayfield:Notify({Title = "Bot Raporu", Content = "Stoklar Discord'a gönderildi!", Duration = 3})
+            task.wait(REFRESH_TIME)
+        end
+    end)
+    
+    MainTab:CreateLabel("Bot Şuan Aktif!")
+    MainTab:CreateLabel("Her " .. REFRESH_TIME .. " saniyede bir Discord'a rapor atar.")
 end
 
--- 5. DOĞRULAMA TETİĞİ
+-- 5. VERIFICATION
 VerifyBtn.MouseButton1Click:Connect(function()
-    if tonumber(AnswerBox.Text) == dogru_cevap then
+    if tonumber(Input.Text) == dogru_cevap then
         ScreenGui:Destroy()
-        LoadHub()
+        InitHub()
     else
-        VerifyBtn.Text = "YANLIŞ! TEKRAR DENE"
+        VerifyBtn.Text = "YANLIŞ!"
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
         task.wait(1)
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        VerifyBtn.Text = "DOĞRULA VE GİRİŞ YAP"
+        VerifyBtn.Text = "BOTU BAŞLAT"
     end
 end)
