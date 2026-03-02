@@ -1,23 +1,14 @@
---[[
-    ALCHEMY GARDEN - FULL WEBHOOK STOCK BOT SYSTEM
-    - Otomatik Eşya Tespit (Dynamic Item Detection)
-    - Dex Kontrollü Derin Tarama
-    - Rayfield Hub Entegrasyonu
-    - Webhook Bot Formatlı Raporlama
-]]--
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- CONFIG
 local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1478024862718103673/KaXBdzHd5KOzltQuHWG6BWcYETFSNzsoPnC5BZPCK3o7eYwI1MEJ32KFolfTkQwpaJwl"
-local BOT_NAME = "Alchemy Stock Bot"
-local REFRESH_TIME = 60 -- Her 60 saniyede bir otomatik stok kontrolü ve webhook
 
--- 1. KEY SYSTEM (Giriş Ekranı - Alchemy Style)
+-- 1. ALCHEMY MATH KEY SYSTEM (Tam İstediğin Stil)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local MainFrame = Instance.new("Frame", ScreenGui)
-local n1, n2 = math.random(10, 50), math.random(5, 15)
+local n1, n2 = math.random(15, 55), math.random(4, 9)
 local dogru_cevap = n1 * n2
 
 MainFrame.Size = UDim2.new(0, 330, 0, 230)
@@ -25,31 +16,24 @@ MainFrame.Position = UDim2.new(0.5, -165, 0.5, -115)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "ALCHEMY HUB\nStock Bot Verification"
-Title.Size = UDim2.new(1, 0, 0, 60)
-Title.TextColor3 = Color3.fromRGB(0, 255, 127)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
-Title.BackgroundTransparency = 1
-
 local GrayBox = Instance.new("Frame", MainFrame)
-GrayBox.Size = UDim2.new(0.85, 0, 0, 50)
-GrayBox.Position = UDim2.new(0.075, 0, 0.45, 0)
-GrayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+GrayBox.Size = UDim2.new(0.85, 0, 0, 55)
+GrayBox.Position = UDim2.new(0.075, 0, 0.4, 0)
+GrayBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 Instance.new("UICorner", GrayBox)
 
 local Question = Instance.new("TextLabel", GrayBox)
-Question.Text = "  " .. n1 .. " x " .. n2 .. " ="
-Question.TextColor3 = Color3.new(0, 0, 0) -- Siyah yazı
+Question.Text = "  İşlem: " .. n1 .. " x " .. n2 .. " ="
+Question.TextColor3 = Color3.new(0, 0, 0) -- SİYAH YAZI
 Question.Font = Enum.Font.GothamBold
-Question.Size = UDim2.new(0.4, 0, 1, 0)
+Question.TextSize = 18
+Question.Size = UDim2.new(0.5, 0, 1, 0)
 Question.BackgroundTransparency = 1
 Question.TextXAlignment = Enum.TextXAlignment.Left
 
 local Input = Instance.new("TextBox", GrayBox)
-Input.Size = UDim2.new(0.5, 0, 0.8, 0)
-Input.Position = UDim2.new(0.45, 0, 0.1, 0)
+Input.Size = UDim2.new(0.45, 0, 0.8, 0)
+Input.Position = UDim2.new(0.5, 0, 0.1, 0)
 Input.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Input.TextColor3 = Color3.fromRGB(0, 255, 127)
 Input.PlaceholderText = "Cevap?"
@@ -60,65 +44,63 @@ local VerifyBtn = Instance.new("TextButton", MainFrame)
 VerifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.075, 0, 0.75, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-VerifyBtn.Text = "BOTU BAŞLAT"
+VerifyBtn.Text = "DOĞRULA VE BOTU BAĞLA"
 VerifyBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", VerifyBtn)
 
--- 2. STOCK BOT MOTORU (Dex Kontrollü)
-local function ScanShop(category)
-    local items = {}
-    -- Dex Görüntüsü Yolu: ReplicatedStorage > Shop > ShopData
-    local shopData = game:GetService("ReplicatedStorage"):FindFirstChild("Shop") 
-        and game:GetService("ReplicatedStorage").Shop:FindFirstChild("ShopData")
+-- 2. DEX & DECOMPILED DATA CONTROLLER
+-- Dosyalarındaki "GetShopData" RemoteFunction'ını kullanarak gerçek zamanlı stok çeker.
+local function GetLiveStock(shopType) -- "SeedShop" veya "GearShop"
+    local stockResult = {}
+    local remote = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild("GetShopData")
     
-    local folder = shopData and shopData:FindFirstChild(category)
-    
-    if folder then
-        for _, item in pairs(folder:GetChildren()) do
-            -- Stok miktarını bulma (Farklı değer tiplerini kontrol eder)
-            local stockCount = 0
-            local amountObj = item:FindFirstChild("Amount") or item:FindFirstChild("Value") or item:FindFirstChild("Stock")
-            
-            if amountObj then
-                stockCount = amountObj.Value
-            elseif item:IsA("IntValue") or item:IsA("NumberValue") then
-                stockCount = item.Value
-            else
-                stockCount = "Aktif" -- Miktar bulunamazsa ama obje oradaysa
+    if remote and remote:IsA("RemoteFunction") then
+        local success, data = pcall(function()
+            return remote:InvokeServer(shopType)
+        end)
+        
+        if success and data then
+            for itemName, itemDetails in pairs(data) do
+                -- Dosyalarındaki StockAmount yapısını kontrol eder
+                stockResult[itemName] = itemDetails.Amount or 0
             end
-            
-            items[item.Name] = stockCount
         end
     end
-    return items
+    
+    -- Eğer Remote başarısız olursa, modül dosyalarından statik isimleri çek
+    if next(stockResult) == nil then
+        local modulePath = shopType == "SeedShop" and "SeedShopData" or "GearShopData"
+        local staticData = require(ReplicatedStorage.Shop.ShopData:WaitForChild(modulePath))
+        for name, info in pairs(staticData.ShopData) do
+            stockResult[info.Name or name] = "Yükleniyor..."
+        end
+    end
+    
+    return stockResult
 end
 
--- 3. WEBHOOK BOT GÖNDERİCİ
-local function PostWebhook(seeds, gears)
-    local seedList = ""
-    local gearList = ""
-
-    for name, qty in pairs(seeds) do seedList = seedList .. "🌱 **" .. name .. "**: `" .. qty .. "`\n" end
-    for name, qty in pairs(gears) do gearList = gearList .. "⚙️ **" .. name .. "**: `" .. qty .. "`\n" end
+-- 3. WEBHOOK BOT FORMATTER
+local function SendBotUpdate(seeds, gears)
+    local seedStr, gearStr = "", ""
+    for k, v in pairs(seeds) do seedStr = seedStr .. "🌱 **" .. k .. "**: `" .. v .. "`\n" end
+    for k, v in pairs(gears) do gearStr = gearStr .. "⚙️ **" .. k .. "**: `" .. v .. "`\n" end
 
     local payload = {
-        ["username"] = BOT_NAME,
-        ["avatar_url"] = "https://i.imgur.com/8Nf9X7S.png",
+        ["username"] = "Garden Stock Bot",
         ["embeds"] = {{
-            ["title"] = "📊 Canlı Stok Güncellemesi",
-            ["description"] = "Aşağıdaki ürünler Garden Horizons Shop üzerinde tespit edildi.",
+            ["title"] = "📢 Canlı Mağaza Stok Raporu",
             ["color"] = 0x00FF7F,
             ["fields"] = {
-                {["name"] = "Tohum Stokları (Seeds)", ["value"] = seedList ~= "" and seedList or "❌ Veri Yok", ["inline"] = false},
-                {["name"] = "Ekipman Stokları (Gears)", ["value"] = gearList ~= "" and gearList or "❌ Veri Yok", ["inline"] = false}
+                {["name"] = "Tohumlar (Seeds)", ["value"] = seedStr ~= "" and seedStr or "Veri yok", ["inline"] = true},
+                {["name"] = "Ekipmanlar (Gears)", ["value"] = gearStr ~= "" and gearStr or "Veri yok", ["inline"] = true}
             },
-            ["footer"] = {["text"] = "Alchemy Hub | Otomatik Bot Kontrolü"}
+            ["footer"] = {["text"] = "Dex & Remote Kontrollü Bot"}
         }}
     }
-
-    local request = (syn and syn.request or http_request or request)
-    if request then
-        request({
+    
+    local req = (syn and syn.request or http_request or request)
+    if req then
+        req({
             Url = WEBHOOK_URL,
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
@@ -127,43 +109,43 @@ local function PostWebhook(seeds, gears)
     end
 end
 
--- 4. ANA PANEL (RAYFIELD)
-local function InitHub()
+-- 4. RAYFIELD HUB & TETİKLEYİCİ
+local function StartBotHub()
     local Window = Rayfield:CreateWindow({
-        Name = "Alchemy Garden | Stock Bot",
-        LoadingTitle = "Dex Verileri Taranıyor...",
+        Name = "Alchemy Stock Hub",
+        LoadingTitle = "RemoteEvents Dinleniyor...",
         ConfigurationSaving = { Enabled = false }
     })
 
-    local MainTab = Window:CreateTab("📦 Canlı Rapor", 4483362458)
-    
+    local SeedTab = Window:CreateTab("🌱 Seeds", 4483362458)
+    local GearTab = Window:CreateTab("⚙️ Gears", 4483362458)
+
     task.spawn(function()
         while true do
-            local seeds = ScanShop("SeedShopData")
-            local gears = ScanShop("GearShopData")
+            local currentSeeds = GetLiveStock("SeedShop")
+            local currentGears = GetLiveStock("GearShop")
             
-            -- Discord'a Raporla
-            PostWebhook(seeds, gears)
+            -- Webhook Gönder
+            SendBotUpdate(currentSeeds, currentGears)
             
-            Rayfield:Notify({Title = "Bot Raporu", Content = "Stoklar Discord'a gönderildi!", Duration = 3})
-            task.wait(REFRESH_TIME)
+            -- Rayfield'a Bilgi Ver
+            Rayfield:Notify({Title = "Stok Güncellendi", Content = "Discord'a rapor gönderildi.", Duration = 2})
+            
+            task.wait(60) -- Her dakika kontrol et
         end
     end)
-    
-    MainTab:CreateLabel("Bot Şuan Aktif!")
-    MainTab:CreateLabel("Her " .. REFRESH_TIME .. " saniyede bir Discord'a rapor atar.")
 end
 
 -- 5. VERIFICATION
 VerifyBtn.MouseButton1Click:Connect(function()
     if tonumber(Input.Text) == dogru_cevap then
         ScreenGui:Destroy()
-        InitHub()
+        StartBotHub()
     else
-        VerifyBtn.Text = "YANLIŞ!"
+        VerifyBtn.Text = "YANLIŞ CEVAP!"
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
         task.wait(1)
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        VerifyBtn.Text = "BOTU BAŞLAT"
+        VerifyBtn.Text = "DOĞRULA VE BOTU BAĞLA"
     end
 end)
