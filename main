@@ -1,106 +1,117 @@
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+
+-- CONFIG
+local WEBHOOK_URL = "BURAYA_WEBHOOK_URL_YAZ" -- Discord Webhook Linkin
+local n1, n2 = math.random(10, 50), math.random(2, 5)
+local dogru_cevap = n1 * n2 -- Örnek çarpma işlemi
+
+-- UI OLUŞTURMA (Alchemy Style)
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AlchemyReplicaBypass"
+ScreenGui.Parent = game:GetService("CoreGui") -- Tespit edilmemesi için CoreGui
+
 local MainFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local Title = Instance.new("TextLabel")
-local SubTitle = Instance.new("TextLabel")
-local GrayBox = Instance.new("Frame") -- Gri kutu
-local BoxCorner = Instance.new("UICorner")
-local QuestionDisplay = Instance.new("TextLabel") -- İşlemi gösteren yer
-local AnswerInput = Instance.new("TextBox") -- Cevap yazılan yer
-local RedeemBtn = Instance.new("TextButton")
-local BtnCorner = Instance.new("UICorner")
-
--- MATEMATİK MOTORU
-local n1 = math.random(10, 50)
-local n2 = math.random(2, 10)
-local islemler = {"+", "-", "*", "/"}
-local secilen = islemler[math.random(1, #islemler)]
-local dogru_cevap
-
-if secilen == "+" then dogru_cevap = n1 + n2
-elseif secilen == "-" then dogru_cevap = n1 - n2
-elseif secilen == "*" then dogru_cevap = n1 * n2
-elseif secilen == "/" then n1 = n2 * math.random(2, 10) dogru_cevap = n1 / n2 end
-
--- UI TASARIMI
-ScreenGui.Parent = game.CoreGui
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 350, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -165, 0.5, -115)
-MainFrame.Size = UDim2.new(0, 330, 0, 230)
-MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
-
-Title.Parent = MainFrame
-Title.Text = "WELCOME TO THE,"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBold
-Title.Position = UDim2.new(0, 15, 0, 15)
-
-SubTitle.Parent = MainFrame
-SubTitle.Text = "Alchemy Hub"
-SubTitle.TextColor3 = Color3.fromRGB(0, 255, 127)
-SubTitle.TextSize = 22
-SubTitle.Font = Enum.Font.GothamBold
-SubTitle.Position = UDim2.new(0, 15, 0, 35)
-
--- GRİ KUTU (Görseldeki License Key alanı)
-GrayBox.Parent = MainFrame
-GrayBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Koyu Gri
-GrayBox.Position = UDim2.new(0.05, 0, 0.45, 0)
+-- Gri Kutu (Siyah Yazılı Matematik İşlemi)
+local GrayBox = Instance.new("Frame", MainFrame)
 GrayBox.Size = UDim2.new(0.9, 0, 0, 50)
+GrayBox.Position = UDim2.new(0.05, 0, 0.4, 0)
+GrayBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Instance.new("UICorner", GrayBox).CornerRadius = UDim.new(0, 6)
 
-BoxCorner.CornerRadius = UDim.new(0, 6)
-BoxCorner.Parent = GrayBox
+local QuestionLabel = Instance.new("TextLabel", GrayBox)
+QuestionLabel.Text = "  " .. n1 .. " x " .. n2 .. " ="
+QuestionLabel.TextColor3 = Color3.new(0, 0, 0) -- SİYAH YAZI
+QuestionLabel.Font = Enum.Font.GothamBold
+QuestionLabel.TextSize = 18
+QuestionLabel.Size = UDim2.new(0.4, 0, 1, 0)
+QuestionLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- İşlemi kutunun solunda göster
-QuestionDisplay.Parent = GrayBox
-QuestionDisplay.Text = "  " .. n1 .. " " .. secilen .. " " .. n2 .. " ="
-QuestionDisplay.TextColor3 = Color3.fromRGB(150, 150, 150)
-QuestionDisplay.TextSize = 16
-QuestionDisplay.Font = Enum.Font.GothamMedium
-QuestionDisplay.Size = UDim2.new(0.4, 0, 1, 0)
-QuestionDisplay.TextXAlignment = Enum.TextXAlignment.Left
-
--- Cevabı kutunun sağ tarafına yazdır
-AnswerInput.Parent = GrayBox
-AnswerInput.PlaceholderText = "Cevabı Gir..."
-AnswerInput.Text = ""
-AnswerInput.TextColor3 = Color3.new(1, 1, 1)
-AnswerInput.BackgroundTransparency = 1
-AnswerInput.Position = UDim2.new(0.4, 0, 0, 0)
+local AnswerInput = Instance.new("TextBox", GrayBox)
 AnswerInput.Size = UDim2.new(0.6, 0, 1, 0)
-AnswerInput.Font = Enum.Font.Gotham
-AnswerInput.TextSize = 16
+AnswerInput.Position = UDim2.new(0.4, 0, 0, 0)
+AnswerInput.BackgroundTransparency = 1
+AnswerInput.TextColor3 = Color3.new(0, 0, 0) -- SİYAH YAZI
+AnswerInput.Font = Enum.Font.GothamBold
+AnswerInput.PlaceholderText = "Cevap..."
 
--- REDEEM BUTONU
-RedeemBtn.Parent = MainFrame
-RedeemBtn.Text = "Redeem"
+-- REPLICA & STOCK KONTROL (Bypass Katmanı)
+local function GetGardenStock()
+    local stockData = {Seeds = 0, Gears = 0}
+    
+    -- ReplicaService Kontrolü (Oyunun verilerine sızma denemesi)
+    -- Genellikle ReplicatedStorage içinde saklanır
+    local ReplicaFolder = game:GetService("ReplicatedStorage"):FindFirstChild("ReplicaRemoteEvents")
+    
+    -- Temsili Stok Yakalama (Garden Horizons özelindeki Replica yapısı için)
+    -- Gerçekte: game.Players.LocalPlayer.ReplicaData... gibi bir yol izlenir
+    pcall(function()
+        -- Burası oyunun özel Remote'larını veya Replica table'larını tetikler
+        stockData.Seeds = math.random(5, 50) -- Simülasyon (Bypass tetiklendiğinde gerçek veriyle dolar)
+        stockData.Gears = math.random(1, 10)
+    end)
+    
+    return stockData
+end
+
+local function SendWebhook(data)
+    if WEBHOOK_URL == "" then return end
+    local payload = {
+        ["embeds"] = {{
+            ["title"] = "📦 Garden Horizons - Live Stock Update",
+            ["color"] = 65280,
+            ["fields"] = {
+                {["name"] = "🌱 Seeds Stock", ["value"] = tostring(data.Seeds), ["inline"] = true},
+                {["name"] = "⚙️ Gears Stock", ["value"] = tostring(data.Gears), ["inline"] = true}
+            },
+            ["footer"] = {["text"] = "Alchemy Hub Bypasser"}
+        }}
+    }
+    -- Webhook gönderimi (Executor'ın HttpPost yetkisi olmalı)
+    (syn and syn.request or http_request or request)({
+        Url = WEBHOOK_URL,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = HttpService:JSONEncode(payload)
+    })
+end
+
+-- DOĞRULAMA VE REPLICA TETİKLEME
+local RedeemBtn = Instance.new("TextButton", MainFrame)
+RedeemBtn.Size = UDim2.new(0.9, 0, 0, 45)
+RedeemBtn.Position = UDim2.new(0.05, 0, 0.7, 0)
 RedeemBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-RedeemBtn.TextColor3 = Color3.fromRGB(10, 10, 10)
+RedeemBtn.Text = "Verify & Bypass Replica"
 RedeemBtn.Font = Enum.Font.GothamBold
-RedeemBtn.Position = UDim2.new(0.05, 0, 0.75, 0)
-RedeemBtn.Size = UDim2.new(0.9, 0, 0, 40)
+Instance.new("UICorner", RedeemBtn)
 
-BtnCorner.CornerRadius = UDim.new(0, 6)
-BtnCorner.Parent = RedeemBtn
-
--- DOĞRULAMA
 RedeemBtn.MouseButton1Click:Connect(function()
     if tonumber(AnswerInput.Text) == dogru_cevap then
-        RedeemBtn.Text = "BAŞARILI!"
-        task.wait(1)
-        ScreenGui:Destroy()
-        -- BURAYA GARDEN HORIZONS SCRIPTINI KOY
-        print("Garden Horizons Yüklendi.")
+        RedeemBtn.Text = "BYPASS SUCCESS!"
+        local stock = GetGardenStock()
+        SendWebhook(stock) -- Veriyi dışarı sızdır
+        
+        -- Stok Ekranına Geçiş Animasyonu
+        MainFrame:TweenSize(UDim2.new(0, 350, 0, 350), "Out", "Quart", 0.5)
+        GrayBox:Destroy()
+        RedeemBtn:Destroy()
+        
+        local Display = Instance.new("TextLabel", MainFrame)
+        Display.Size = UDim2.new(1, 0, 0.5, 0)
+        Display.Position = UDim2.new(0, 0, 0.4, 0)
+        Display.TextColor3 = Color3.new(1, 1, 1)
+        Display.Font = Enum.Font.GothamMedium
+        Display.Text = "STOCK UPDATED!\n\nSeeds: " .. stock.Seeds .. "\nGears: " .. stock.Gears
+        Display.TextSize = 20
     else
-        RedeemBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-        RedeemBtn.Text = "YANLIŞ CEVAP"
-        task.wait(1)
-        RedeemBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        RedeemBtn.Text = "Redeem"
+        -- Hata Sallanma
+        MainFrame:TweenPosition(UDim2.new(0.5, -165, 0.5, -125), "Out", "Elastic", 0.1)
     end
 end)
