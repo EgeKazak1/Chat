@@ -1,9 +1,9 @@
 --[[
     GARDEN HORIZONS: ULTIMATE STOCK BYPASSER
-    - Decompiled Controllers & Data Files Integrated
-    - RemoteFunction: GetShopData Bypass
-    - Rayfield UI & Alchemy Verification
-    - Webhook Stock Bot (Full Auto & Detailed List)
+    - ReplicatedStorage.Shop.ShopData Entegrasyonu
+    - SeedShopData & GearShopData Modül Bağlantısı
+    - RemoteFunction: GetShopData Tetiklemeli
+    - Webhook Stock Bot (Detaylı Tekil Listeleme)
 ]]--
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -64,11 +64,13 @@ VerifyBtn.Text = "BOTU TETİKLE"
 VerifyBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", VerifyBtn)
 
--- 2. DEX VE DOSYA KONTROLLÜ STOK ÇEKİCİ
-local function FetchLiveStock(shopId)
+-- 2. REPLICATEDSTORAGE / SHOPDATA KONTROLCÜSÜ
+-- .txt dosyalarındaki hiyerarşiyi (Shop.ShopData) birebir takip eder
+local function FetchShopStock(shopId)
     local results = {}
     local remoteFunction = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild("GetShopData")
     
+    -- Önce sunucudan canlı veriyi çekmeyi dene
     if remoteFunction and remoteFunction:IsA("RemoteFunction") then
         local success, data = pcall(function()
             return remoteFunction:InvokeServer(shopId)
@@ -76,7 +78,6 @@ local function FetchLiveStock(shopId)
         
         if success and data then
             for name, details in pairs(data) do
-                -- Miktarı tam sayı olarak alıyoruz
                 local amount = 0
                 if typeof(details) == "table" then
                     amount = details.Amount or (details.StockAmount and details.StockAmount[1]) or 0
@@ -88,18 +89,18 @@ local function FetchLiveStock(shopId)
         end
     end
 
-    -- Yedek plan: Modül dosyalarından isimleri çek
+    -- Eğer canlı veri boşsa, ReplicatedStorage içindeki Modülleri (txt ile aynı yapıda olanlar) oku
     if next(results) == nil then
         local moduleName = (shopId == "SeedShop") and "SeedShopData" or "GearShopData"
-        local shopPath = ReplicatedStorage:FindFirstChild("Shop")
-        local dataPath = shopPath and shopPath:FindFirstChild("ShopData")
-        local module = dataPath and dataPath:FindFirstChild(moduleName)
+        local shopDataFolder = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop:FindFirstChild("ShopData")
+        local module = shopDataFolder and shopDataFolder:FindFirstChild(moduleName)
         
         if module then
-            local static = require(module)
-            if static and static.ShopData then
-                for key, val in pairs(static.ShopData) do
-                    results[val.Name or key] = "Kontrol Ediliyor..."
+            local staticData = require(module)
+            if staticData and staticData.ShopData then
+                for itemName, itemInfo in pairs(staticData.ShopData) do
+                    -- Modüldeki ismi veya anahtar kelimeyi al (Carrot Seed, Watering Can vb.)
+                    results[itemInfo.Name or itemName] = "Bekleniyor..."
                 end
             end
         end
@@ -108,41 +109,40 @@ local function FetchLiveStock(shopId)
     return results
 end
 
--- 3. WEBHOOK GÖNDERİMİ (Detaylı Liste Formatı)
-local function PostToDiscord(seeds, gears)
-    local seedContent = ""
-    local gearContent = ""
+-- 3. WEBHOOK GÖNDERİMİ (Teker Teker Yazı Formatı)
+local function PostDetailedStock(seeds, gears)
+    local seedList = ""
+    local gearList = ""
+    local sCount, gCount = 0, 0
 
-    -- Seeds Listesi (Teker teker)
-    local seedCount = 0
-    for n, q in pairs(seeds) do 
-        seedCount = seedCount + 1
-        seedContent = seedContent .. "🌱 **" .. n .. "**: " .. tostring(q) .. " adet\n" 
+    -- Tohumları tek tek işle
+    for name, qty in pairs(seeds) do 
+        sCount = sCount + 1
+        seedList = seedList .. "🌱 **" .. name .. "**: " .. tostring(qty) .. " adet mevcut\n" 
     end
-    if seedContent == "" then seedContent = "❌ Tohum stoğu bulunamadı." end
+    if seedList == "" then seedList = "⚠️ Tohum verisi alınamadı." end
 
-    -- Gears Listesi (Teker teker)
-    local gearCount = 0
-    for n, q in pairs(gears) do 
-        gearCount = gearCount + 1
-        gearContent = gearContent .. "⚙️ **" .. n .. "**: " .. tostring(q) .. " adet\n" 
+    -- Ekipmanları tek tek işle
+    for name, qty in pairs(gears) do 
+        gCount = gCount + 1
+        gearList = gearList .. "⚙️ **" .. name .. "**: " .. tostring(qty) .. " adet mevcut\n" 
     end
-    if gearContent == "" then gearContent = "❌ Ekipman stoğu bulunamadı." end
+    if gearList == "" then gearList = "⚠️ Ekipman verisi alınamadı." end
 
     local embed = {
-        ["title"] = "📦 Garden Horizons - Detaylı Stok Raporu",
-        ["description"] = "Aşağıdaki ürünler mağazada teker teker tespit edilmiştir:",
+        ["title"] = "📢 GARDEN HORIZONS STOK RAPORU",
+        ["description"] = "Aşağıdaki ürünler oyun dosyaları ve sunucu verileriyle senkronize edildi.",
         ["color"] = 0x00FF7F,
         ["fields"] = {
-            {["name"] = "Tohum Listesi ("..seedCount..")", ["value"] = seedContent, ["inline"] = false},
-            {["name"] = "Ekipman Listesi ("..gearCount..")", ["value"] = gearContent, ["inline"] = false}
+            {["name"] = "Tohum Stokları ("..sCount..")", ["value"] = seedList, ["inline"] = false},
+            {["name"] = "Ekipman Stokları ("..gCount..")", ["value"] = gearList, ["inline"] = false}
         },
-        ["footer"] = {["text"] = "Bypass Mode: Active | Alchemy Hub | " .. os.date("%X")}
+        ["footer"] = {["text"] = "Alchemy Hub | Dex & Module Kontrollü | " .. os.date("%X")}
     }
 
-    local req = (syn and syn.request or http_request or request)
-    if req then
-        req({
+    local request = (syn and syn.request or http_request or request)
+    if request then
+        request({
             Url = WEBHOOK_URL,
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
@@ -151,28 +151,30 @@ local function PostToDiscord(seeds, gears)
     end
 end
 
--- 4. RAYFIELD HUB BAŞLATMA
-local function LoadHub()
+-- 4. ANA PANEL (RAYFIELD)
+local function StartSystem()
     local Window = Rayfield:CreateWindow({
         Name = "Alchemy Stock Hub",
-        LoadingTitle = "Decompiled Data Syncing...",
+        LoadingTitle = "Shop Folder Bağlantısı Kuruluyor...",
         ConfigurationSaving = { Enabled = false }
     })
 
-    local MainTab = Window:CreateTab("📊 Canlı Liste", 4483362458)
-    local LogLabel = MainTab:CreateLabel("Bot Başlatıldı: Stoklar taranıyor...")
+    local MainTab = Window:CreateTab("📊 Canlı Takip", 4483362458)
+    local StatusLabel = MainTab:CreateLabel("Bot durumu: Aktif (Taramada)")
     
     task.spawn(function()
         while true do
-            local seeds = FetchLiveStock("SeedShop")
-            local gears = FetchLiveStock("GearShop")
+            -- ShopFolder içindeki Seed ve Gear verilerini tetikle
+            local seeds = FetchShopStock("SeedShop")
+            local gears = FetchShopStock("GearShop")
             
-            PostToDiscord(seeds, gears)
+            -- Discord'a teker teker yazdır
+            PostDetailedStock(seeds, gears)
             
-            LogLabel:Set("Son Güncelleme: " .. os.date("%X"))
+            StatusLabel:Set("Son Tarama: " .. os.date("%X"))
             Rayfield:Notify({
-                Title = "Stok Güncellendi",
-                Content = "Tüm ürünler teker teker listelenip Discord'a gönderildi.",
+                Title = "Stoklar Güncellendi",
+                Content = "Shop folder verileri teker teker Discord'a yazdırıldı.",
                 Duration = 3
             })
             
@@ -181,11 +183,11 @@ local function LoadHub()
     end)
 end
 
--- 5. DOĞRULAMA MANTIĞI
+-- 5. DOĞRULAMA TETİĞİ
 VerifyBtn.MouseButton1Click:Connect(function()
     if tonumber(Answer.Text) == dogru_cevap then
         ScreenGui:Destroy()
-        LoadHub()
+        StartSystem()
     else
         VerifyBtn.Text = "HATALI CEVAP"
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
