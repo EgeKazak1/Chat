@@ -3,89 +3,82 @@ local MainFrame = Instance.new("Frame")
 local UICorner = Instance.new("UICorner")
 local Title = Instance.new("TextLabel")
 local SubTitle = Instance.new("TextLabel")
-local QuestionText = Instance.new("TextLabel")
-local AnswerBox = Instance.new("TextBox")
+local GrayBox = Instance.new("Frame") -- Gri kutu
+local BoxCorner = Instance.new("UICorner")
+local QuestionDisplay = Instance.new("TextLabel") -- İşlemi gösteren yer
+local AnswerInput = Instance.new("TextBox") -- Cevap yazılan yer
 local RedeemBtn = Instance.new("TextButton")
 local BtnCorner = Instance.new("UICorner")
 
--- AYARLAR: MATEMATİK SİSTEMİ
-local n1 = math.random(10, 100)
-local n2 = math.random(2, 10) -- Bölme ve çarpma için çok büyük olmasın
+-- MATEMATİK MOTORU
+local n1 = math.random(10, 50)
+local n2 = math.random(2, 10)
 local islemler = {"+", "-", "*", "/"}
-local secilen_islem = islemler[math.random(1, #islemler)]
+local secilen = islemler[math.random(1, #islemler)]
 local dogru_cevap
 
--- İşlem Hesaplama
-if secilen_islem == "+" then
-    dogru_cevap = n1 + n2
-elseif secilen_islem == "-" then
-    dogru_cevap = n1 - n2
-elseif secilen_islem == "*" then
-    dogru_cevap = n1 * n2
-elseif secilen_islem == "/" then
-    n1 = n2 * math.random(2, 10) -- Tam bölünmesi için n1'i yeniden ayarla
-    dogru_cevap = n1 / n2
-end
+if secilen == "+" then dogru_cevap = n1 + n2
+elseif secilen == "-" then dogru_cevap = n1 - n2
+elseif secilen == "*" then dogru_cevap = n1 * n2
+elseif secilen == "/" then n1 = n2 * math.random(2, 10) dogru_cevap = n1 / n2 end
 
--- UI TASARIMI (Alchemy Style)
+-- UI TASARIMI
 ScreenGui.Parent = game.CoreGui
-ScreenGui.Name = "AlchemyMathKey"
-
-MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -165, 0.5, -110)
-MainFrame.Size = UDim2.new(0, 330, 0, 220)
-MainFrame.Active = true
-MainFrame.Draggable = true -- Sürüklenebilir
+MainFrame.Position = UDim2.new(0.5, -165, 0.5, -115)
+MainFrame.Size = UDim2.new(0, 330, 0, 230)
+MainFrame.Draggable = true
 
 UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
 
 Title.Parent = MainFrame
 Title.Text = "WELCOME TO THE,"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 18
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
 Title.Position = UDim2.new(0, 15, 0, 15)
-Title.Size = UDim2.new(0, 200, 0, 20)
-Title.TextXAlignment = Enum.TextXAlignment.Left
 
 SubTitle.Parent = MainFrame
-SubTitle.Text = "Alchemy Math Hub"
-SubTitle.TextColor3 = Color3.fromRGB(0, 255, 127) -- Neon Yeşil
+SubTitle.Text = "Alchemy Hub"
+SubTitle.TextColor3 = Color3.fromRGB(0, 255, 127)
 SubTitle.TextSize = 22
 SubTitle.Font = Enum.Font.GothamBold
 SubTitle.Position = UDim2.new(0, 15, 0, 35)
-SubTitle.Size = UDim2.new(0, 200, 0, 30)
-SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- SORU GÖSTERGESİ
-QuestionText.Parent = MainFrame
-QuestionText.Text = "İşlemi Çöz: " .. n1 .. " " .. secilen_islem .. " " .. n2 .. " = ?"
-QuestionText.TextColor3 = Color3.fromRGB(200, 200, 200)
-QuestionText.TextSize = 16
-QuestionText.Font = Enum.Font.GothamMedium
-QuestionText.Position = UDim2.new(0, 0, 0.35, 0)
-QuestionText.Size = UDim2.new(1, 0, 0, 30)
+-- GRİ KUTU (Görseldeki License Key alanı)
+GrayBox.Parent = MainFrame
+GrayBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Koyu Gri
+GrayBox.Position = UDim2.new(0.05, 0, 0.45, 0)
+GrayBox.Size = UDim2.new(0.9, 0, 0, 50)
 
--- CEVAP KUTUSU
-AnswerBox.Parent = MainFrame
-AnswerBox.PlaceholderText = "Cevabı buraya gir..."
-AnswerBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-AnswerBox.Position = UDim2.new(0.05, 0, 0.52, 0)
-AnswerBox.Size = UDim2.new(0.9, 0, 0, 40)
-AnswerBox.TextColor3 = Color3.new(1, 1, 1)
-AnswerBox.Text = ""
-AnswerBox.Font = Enum.Font.Gotham
-
-local BoxCorner = Instance.new("UICorner")
 BoxCorner.CornerRadius = UDim.new(0, 6)
-BoxCorner.Parent = AnswerBox
+BoxCorner.Parent = GrayBox
+
+-- İşlemi kutunun solunda göster
+QuestionDisplay.Parent = GrayBox
+QuestionDisplay.Text = "  " .. n1 .. " " .. secilen .. " " .. n2 .. " ="
+QuestionDisplay.TextColor3 = Color3.fromRGB(150, 150, 150)
+QuestionDisplay.TextSize = 16
+QuestionDisplay.Font = Enum.Font.GothamMedium
+QuestionDisplay.Size = UDim2.new(0.4, 0, 1, 0)
+QuestionDisplay.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Cevabı kutunun sağ tarafına yazdır
+AnswerInput.Parent = GrayBox
+AnswerInput.PlaceholderText = "Cevabı Gir..."
+AnswerInput.Text = ""
+AnswerInput.TextColor3 = Color3.new(1, 1, 1)
+AnswerInput.BackgroundTransparency = 1
+AnswerInput.Position = UDim2.new(0.4, 0, 0, 0)
+AnswerInput.Size = UDim2.new(0.6, 0, 1, 0)
+AnswerInput.Font = Enum.Font.Gotham
+AnswerInput.TextSize = 16
 
 -- REDEEM BUTONU
 RedeemBtn.Parent = MainFrame
-RedeemBtn.Text = "Sistemi Doğrula"
+RedeemBtn.Text = "Redeem"
 RedeemBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
 RedeemBtn.TextColor3 = Color3.fromRGB(10, 10, 10)
 RedeemBtn.Font = Enum.Font.GothamBold
@@ -95,21 +88,19 @@ RedeemBtn.Size = UDim2.new(0.9, 0, 0, 40)
 BtnCorner.CornerRadius = UDim.new(0, 6)
 BtnCorner.Parent = RedeemBtn
 
--- KONTROL VE AÇILIŞ (GARDEN HORIZONS)
+-- DOĞRULAMA
 RedeemBtn.MouseButton1Click:Connect(function()
-    if tonumber(AnswerBox.Text) == dogru_cevap then
-        RedeemBtn.Text = "DOĞRU! SCRIPT AÇILIYOR..."
-        RedeemBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-        task.wait(1.5)
-        ScreenGui:Destroy()
-        
-        -- Buraya asıl Garden Horizons hile kodunu yazacaksın
-        print("Garden Horizons Hub Yüklendi!")
-    else
-        RedeemBtn.Text = "YANLIŞ CEVAP!"
-        RedeemBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    if tonumber(AnswerInput.Text) == dogru_cevap then
+        RedeemBtn.Text = "BAŞARILI!"
         task.wait(1)
-        RedeemBtn.Text = "Sistemi Doğrula"
+        ScreenGui:Destroy()
+        -- BURAYA GARDEN HORIZONS SCRIPTINI KOY
+        print("Garden Horizons Yüklendi.")
+    else
+        RedeemBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        RedeemBtn.Text = "YANLIŞ CEVAP"
+        task.wait(1)
         RedeemBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+        RedeemBtn.Text = "Redeem"
     end
 end)
