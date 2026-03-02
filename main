@@ -1,9 +1,9 @@
 --[[
-    GARDEN HORIZONS: ULTIMATE STOCK BYPASSER
+    GARDEN HORIZONS: ULTIMATE STOCK BYPASSER (PRO EDITION)
     - ReplicatedStorage.Shop.ShopData Entegrasyonu
-    - SeedShopData & GearShopData Modül Bağlantısı
+    - Definitions Entegrasyonu (Rarity, Description, DevProductId)
     - RemoteFunction: GetShopData Tetiklemeli
-    - Webhook Stock Bot (Detaylı Tekil Listeleme)
+    - Webhook Stock Bot (Full Metadata & Detaylı Liste)
 ]]--
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -17,16 +17,16 @@ local CHECK_INTERVAL = 60 -- 60 saniyede bir güncelleme
 -- 1. DOĞRULAMA EKRANI (Alchemy Tasarımı)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local MainFrame = Instance.new("Frame", ScreenGui)
-local n1, n2 = math.random(10, 50), math.random(4, 8)
+local n1, n2 = math.random(10, 55), math.random(5, 9)
 local dogru_cevap = n1 * n2
 
 MainFrame.Size = UDim2.new(0, 340, 0, 240)
 MainFrame.Position = UDim2.new(0.5, -170, 0.5, -120)
-MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 local Header = Instance.new("TextLabel", MainFrame)
-Header.Text = "ALCHEMY HUB\nFinal Bypass System"
+Header.Text = "ALCHEMY HUB\nFull Feature Stock Bot"
 Header.Size = UDim2.new(1, 0, 0, 60)
 Header.TextColor3 = Color3.fromRGB(0, 255, 127)
 Header.Font = Enum.Font.GothamBold
@@ -34,14 +34,14 @@ Header.TextSize = 20
 Header.BackgroundTransparency = 1
 
 local InputBox = Instance.new("Frame", MainFrame)
-InputBox.Size = UDim2.new(0.85, 0, 0, 50)
+InputBox.Size = UDim2.new(0.85, 0, 0, 55)
 InputBox.Position = UDim2.new(0.075, 0, 0.45, 0)
-InputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50) -- Gri Kutu
+InputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Instance.new("UICorner", InputBox)
 
 local Question = Instance.new("TextLabel", InputBox)
 Question.Text = "  " .. n1 .. " x " .. n2 .. " ="
-Question.TextColor3 = Color3.new(0, 0, 0) -- Siyah Yazı
+Question.TextColor3 = Color3.new(1, 1, 1)
 Question.Font = Enum.Font.GothamBold
 Question.Size = UDim2.new(0.4, 0, 1, 0)
 Question.BackgroundTransparency = 1
@@ -52,7 +52,7 @@ Answer.Size = UDim2.new(0.5, 0, 0.8, 0)
 Answer.Position = UDim2.new(0.45, 0, 0.1, 0)
 Answer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Answer.TextColor3 = Color3.fromRGB(0, 255, 127)
-Answer.PlaceholderText = "Cevap..."
+Answer.PlaceholderText = "?"
 Answer.Text = ""
 Instance.new("UICorner", Answer)
 
@@ -60,139 +60,132 @@ local VerifyBtn = Instance.new("TextButton", MainFrame)
 VerifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.075, 0, 0.75, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-VerifyBtn.Text = "BOTU TETİKLE"
+VerifyBtn.Text = "SİSTEMİ TETİKLE"
 VerifyBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", VerifyBtn)
 
--- 2. REPLICATEDSTORAGE / SHOPDATA KONTROLCÜSÜ
--- .txt dosyalarındaki hiyerarşiyi (Shop.ShopData) birebir takip eder
-local function FetchShopStock(shopId)
-    local results = {}
-    local remoteFunction = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild("GetShopData")
+-- 2. METADATA (DEFINITIONS) ÇEKİCİ
+local function GetItemMetadata(itemName, category)
+    local meta = {Rarity = "Common", Description = "Açıklama bulunamadı."}
     
-    -- Önce sunucudan canlı veriyi çekmeyi dene
-    if remoteFunction and remoteFunction:IsA("RemoteFunction") then
-        local success, data = pcall(function()
-            return remoteFunction:InvokeServer(shopId)
-        end)
-        
+    -- GearDefinitions Kontrolü
+    local gearDefsModule = ReplicatedStorage:FindFirstChild("Gears") and ReplicatedStorage.Gears:FindFirstChild("Definitions") and ReplicatedStorage.Gears.Definitions:FindFirstChild("GearDefinitions")
+    if gearDefsModule then
+        local defs = require(gearDefsModule)
+        if defs.Gears and defs.Gears[itemName] then
+            meta.Rarity = defs.Gears[itemName].Rarity or meta.Rarity
+            meta.Description = defs.Gears[itemName].GearDescription or meta.Description
+        end
+    end
+    
+    return meta
+end
+
+-- 3. ANA STOK ÇEKİCİ
+local function FetchProStock(shopId)
+    local results = {}
+    local remote = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild("GetShopData")
+    
+    if remote and remote:IsA("RemoteFunction") then
+        local success, data = pcall(function() return remote:InvokeServer(shopId) end)
         if success and data then
             for name, details in pairs(data) do
                 local amount = 0
                 if typeof(details) == "table" then
                     amount = details.Amount or (details.StockAmount and details.StockAmount[1]) or 0
-                else
-                    amount = details
-                end
-                results[name] = amount
+                else amount = details end
+                
+                local meta = GetItemMetadata(name, shopId)
+                results[name] = {Amount = amount, Rarity = meta.Rarity, Desc = meta.Desc}
             end
         end
     end
 
-    -- Eğer canlı veri boşsa, ReplicatedStorage içindeki Modülleri (txt ile aynı yapıda olanlar) oku
+    -- Yedek: Manuel Tarama (txt dosyalarındaki yapı)
     if next(results) == nil then
         local moduleName = (shopId == "SeedShop") and "SeedShopData" or "GearShopData"
-        local shopDataFolder = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop:FindFirstChild("ShopData")
-        local module = shopDataFolder and shopDataFolder:FindFirstChild(moduleName)
-        
-        if module then
-            local staticData = require(module)
-            if staticData and staticData.ShopData then
-                for itemName, itemInfo in pairs(staticData.ShopData) do
-                    -- Modüldeki ismi veya anahtar kelimeyi al (Carrot Seed, Watering Can vb.)
-                    results[itemInfo.Name or itemName] = "Bekleniyor..."
-                end
+        local mod = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop.ShopData:FindFirstChild(moduleName)
+        if mod then
+            local static = require(mod)
+            for k, v in pairs(static.ShopData) do
+                local name = v.Name or k
+                local meta = GetItemMetadata(name, shopId)
+                results[name] = {Amount = "Bilinmiyor", Rarity = meta.Rarity, Desc = meta.Desc}
             end
         end
     end
-    
     return results
 end
 
--- 3. WEBHOOK GÖNDERİMİ (Teker Teker Yazı Formatı)
-local function PostDetailedStock(seeds, gears)
-    local seedList = ""
-    local gearList = ""
-    local sCount, gCount = 0, 0
-
-    -- Tohumları tek tek işle
-    for name, qty in pairs(seeds) do 
-        sCount = sCount + 1
-        seedList = seedList .. "🌱 **" .. name .. "**: " .. tostring(qty) .. " adet mevcut\n" 
+-- 4. DISCORD WEBHOOK (Tüm Özellikler Ekli)
+local function SendFullBotUpdate(seeds, gears)
+    local seedStr, gearStr = "", ""
+    
+    for name, data in pairs(seeds) do
+        seedStr = seedStr .. "🌱 **" .. name .. "**\n└ 📦 Miktar: `" .. tostring(data.Amount) .. "`\n\n"
     end
-    if seedList == "" then seedList = "⚠️ Tohum verisi alınamadı." end
-
-    -- Ekipmanları tek tek işle
-    for name, qty in pairs(gears) do 
-        gCount = gCount + 1
-        gearList = gearList .. "⚙️ **" .. name .. "**: " .. tostring(qty) .. " adet mevcut\n" 
+    
+    for name, data in pairs(gears) do
+        local rarityEmoji = (data.Rarity == "Legendary" and "⭐") or (data.Rarity == "Epic" and "💜") or (data.Rarity == "Rare" and "💙") or "⚪"
+        gearStr = gearStr .. "⚙️ **" .. name .. "** [" .. rarityEmoji .. " " .. data.Rarity .. "]\n└ 📦 Miktar: `" .. tostring(data.Amount) .. "`\n└ 📝 *" .. (data.Desc or "Açıklama yok") .. "*\n\n"
     end
-    if gearList == "" then gearList = "⚠️ Ekipman verisi alınamadı." end
 
-    local embed = {
-        ["title"] = "📢 GARDEN HORIZONS STOK RAPORU",
-        ["description"] = "Aşağıdaki ürünler oyun dosyaları ve sunucu verileriyle senkronize edildi.",
-        ["color"] = 0x00FF7F,
-        ["fields"] = {
-            {["name"] = "Tohum Stokları ("..sCount..")", ["value"] = seedList, ["inline"] = false},
-            {["name"] = "Ekipman Stokları ("..gCount..")", ["value"] = gearList, ["inline"] = false}
-        },
-        ["footer"] = {["text"] = "Alchemy Hub | Dex & Module Kontrollü | " .. os.date("%X")}
+    local payload = {
+        ["embeds"] = {{
+            ["title"] = "🚀 GARDEN HORIZONS - FULL FEATURE STOCK BOT",
+            ["color"] = 0x00FF7F,
+            ["fields"] = {
+                {["name"] = "🌱 Tohumlar", ["value"] = seedStr ~= "" and seedStr or "Stok Yok", ["inline"] = false},
+                {["name"] = "⚙️ Ekipmanlar (Full Özellikli)", ["value"] = gearStr ~= "" and gearStr or "Stok Yok", ["inline"] = false}
+            },
+            ["footer"] = {["text"] = "Bypass Mode: PRO | Dex & Definition Linked | " .. os.date("%X")}
+        }}
     }
 
-    local request = (syn and syn.request or http_request or request)
-    if request then
-        request({
+    local req = (syn and syn.request or http_request or request)
+    if req then
+        req({
             Url = WEBHOOK_URL,
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
-            Body = HttpService:JSONEncode({["embeds"] = {embed}})
+            Body = HttpService:JSONEncode(payload)
         })
     end
 end
 
--- 4. ANA PANEL (RAYFIELD)
-local function StartSystem()
+-- 5. RAYFIELD HUB
+local function InitAlchemyHub()
     local Window = Rayfield:CreateWindow({
-        Name = "Alchemy Stock Hub",
-        LoadingTitle = "Shop Folder Bağlantısı Kuruluyor...",
+        Name = "Alchemy PRO Stock",
+        LoadingTitle = "Definitions & ShopData Syncing...",
         ConfigurationSaving = { Enabled = false }
     })
 
-    local MainTab = Window:CreateTab("📊 Canlı Takip", 4483362458)
-    local StatusLabel = MainTab:CreateLabel("Bot durumu: Aktif (Taramada)")
-    
+    local Tab = Window:CreateTab("📊 Full Scan", 4483362458)
+    local Label = Tab:CreateLabel("Sistem: Aktif | Definitions Bağlandı")
+
     task.spawn(function()
         while true do
-            -- ShopFolder içindeki Seed ve Gear verilerini tetikle
-            local seeds = FetchShopStock("SeedShop")
-            local gears = FetchShopStock("GearShop")
-            
-            -- Discord'a teker teker yazdır
-            PostDetailedStock(seeds, gears)
-            
-            StatusLabel:Set("Son Tarama: " .. os.date("%X"))
-            Rayfield:Notify({
-                Title = "Stoklar Güncellendi",
-                Content = "Shop folder verileri teker teker Discord'a yazdırıldı.",
-                Duration = 3
-            })
-            
+            local s = FetchProStock("SeedShop")
+            local g = FetchProStock("GearShop")
+            SendFullBotUpdate(s, g)
+            Label:Set("Son Tarama: " .. os.date("%X"))
+            Rayfield:Notify({Title = "Stok Güncellendi", Content = "Tüm metadata özellikleri Discord'a basıldı.", Duration = 3})
             task.wait(CHECK_INTERVAL)
         end
     end)
 end
 
--- 5. DOĞRULAMA TETİĞİ
+-- 6. VERIFY
 VerifyBtn.MouseButton1Click:Connect(function()
     if tonumber(Answer.Text) == dogru_cevap then
         ScreenGui:Destroy()
-        StartSystem()
+        InitAlchemyHub()
     else
-        VerifyBtn.Text = "HATALI CEVAP"
+        VerifyBtn.Text = "YANLIŞ CEVAP"
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
         task.wait(1)
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        VerifyBtn.Text = "BOTU TETİKLE"
+        VerifyBtn.Text = "SİSTEMİ TETİKLE"
     end
 end)
