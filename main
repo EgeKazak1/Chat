@@ -1,91 +1,135 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local HttpService = game:GetService("HttpService")
 
--- 1. MATEMATİK KEY UI (Alchemy Style)
+-- 1. MATEMATİK KEY SİSTEMİ (Giriş Kapısı)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local MainFrame = Instance.new("Frame", ScreenGui)
-local n1, n2 = math.random(10, 50), math.random(2, 8)
+local n1, n2 = math.random(15, 60), math.random(3, 9)
 local dogru_cevap = n1 * n2
 
--- UI Özellikleri (Alchemy Tasarımı)
+-- Alchemy Tarzı UI Tasarımı
 MainFrame.Size = UDim2.new(0, 330, 0, 220)
 MainFrame.Position = UDim2.new(0.5, -165, 0.5, -110)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", MainFrame)
 
 local GrayBox = Instance.new("Frame", MainFrame)
-GrayBox.Size = UDim2.new(0.9, 0, 0, 50)
-GrayBox.Position = UDim2.new(0.05, 0, 0.45, 0)
-GrayBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+GrayBox.Size = UDim2.new(0.9, 0, 0, 55)
+GrayBox.Position = UDim2.new(0.05, 0, 0.4, 0)
+GrayBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Instance.new("UICorner", GrayBox)
 
 local QuestionLabel = Instance.new("TextLabel", GrayBox)
 QuestionLabel.Text = "  " .. n1 .. " x " .. n2 .. " ="
-QuestionLabel.TextColor3 = Color3.new(0, 0, 0) -- SİYAH YAZI
+QuestionLabel.TextColor3 = Color3.new(0, 0, 0) -- Siyah Yazı
 QuestionLabel.Font = Enum.Font.GothamBold
+QuestionLabel.TextSize = 20
 QuestionLabel.Size = UDim2.new(0.4, 0, 1, 0)
 QuestionLabel.BackgroundTransparency = 1
 
 local AnswerInput = Instance.new("TextBox", GrayBox)
-AnswerInput.Size = UDim2.new(0.5, 0, 1, 0)
-AnswerInput.Position = UDim2.new(0.45, 0, 0, 0)
+AnswerInput.Size = UDim2.new(0.55, 0, 1, 0)
+AnswerInput.Position = UDim2.new(0.4, 0, 0, 0)
 AnswerInput.BackgroundTransparency = 1
-AnswerInput.TextColor3 = Color3.new(0, 0, 0) -- SİYAH YAZI
+AnswerInput.TextColor3 = Color3.new(0, 0, 0) -- Siyah Yazı
 AnswerInput.Font = Enum.Font.GothamBold
-AnswerInput.Text = ""
+AnswerInput.TextSize = 20
+AnswerInput.PlaceholderText = "Cevap?"
 
 local VerifyBtn = Instance.new("TextButton", MainFrame)
 VerifyBtn.Size = UDim2.new(0.9, 0, 0, 45)
 VerifyBtn.Position = UDim2.new(0.05, 0, 0.75, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-VerifyBtn.Text = "REDEEM & OPEN HUB"
+VerifyBtn.Text = "DOĞRULA VE STOKLARI AÇ"
 VerifyBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", VerifyBtn)
 
--- 2. RAYFIELD HUB FONKSİYONU
-local function OpenRayfield()
+-- 2. GERÇEK STOK TAKİP FONKSİYONU (Garden Horizons Bağlantılı)
+local function GetRealStock()
+    local inventory = {}
+    -- Garden Horizons'ın veri yapısına (Replica/Folder) erişim
+    -- Oyun genellikle verileri LocalPlayer altındaki klasörlerde veya ReplicatedStorage'da tutar.
+    local player = game.Players.LocalPlayer
+    
+    -- Veri yollarını kontrol et (Seeds ve Gears klasörlerini bulur)
+    local dataFolders = {
+        player:FindFirstChild("Inventory"),
+        player:FindFirstChild("Backpack"),
+        game.ReplicatedStorage:FindFirstChild("ReplicaData") -- ReplicaService kullanımı varsa
+    }
+
+    for _, folder in pairs(dataFolders) do
+        if folder then
+            for _, item in pairs(folder:GetDescendants()) do
+                -- Seed veya Gear içeren eşyaları ayıkla
+                if item:IsA("ValueBase") or item:IsA("Tool") then
+                    local name = item.Name
+                    local amount = (item:IsA("NumberValue") or item:IsA("IntValue")) and item.Value or 1
+                    
+                    if name:find("Seed") or name:find("Gear") or name:find("Sprocket") then
+                        inventory[name] = (inventory[name] or 0) + amount
+                    end
+                end
+            end
+        end
+    end
+    return inventory
+end
+
+-- 3. RAYFIELD HUB VE CANLI LİSTELEME
+local function StartHub()
     local Window = Rayfield:CreateWindow({
-       Name = "Alchemy Garden | Stock Hub",
-       LoadingTitle = "Bypassing Replica Data...",
-       LoadingSubtitle = "by Hile Ustası",
-       ConfigurationSaving = { Enabled = false }
+        Name = "Alchemy Garden | Real-Time Stock",
+        LoadingTitle = "Garden Horizons Bağlantısı Kuruluyor...",
+        LoadingSubtitle = "Bypassing Replica Control",
+        ConfigurationSaving = { Enabled = false }
     })
 
-    local StockTab = Window:CreateTab("📦 Live Stock", 4483362458)
-    
-    -- Örnek Stok Verileri (Burayı oyun içi Replica yollarıyla bağlayabilirsin)
-    local SeedLabel = StockTab:CreateLabel("🌱 Seeds: Loading...")
-    local GearLabel = StockTab:CreateLabel("⚙️ Gears: Loading...")
-    
-    -- Canlı Güncelleme Döngüsü
+    local StockTab = Window:CreateTab("📦 Canlı Stoklar", 4483362458)
+    local ListSection = StockTab:CreateSection("Mevcut Tohum ve Gear Listesi")
+
+    -- Dinamik Etiketler Tablosu
+    local Labels = {}
+
+    local function RefreshUI()
+        local currentStock = GetRealStock()
+        -- Eski etiketleri temizle veya güncelle
+        for name, amount in pairs(currentStock) do
+            local text = "🔹 " .. name .. ": " .. amount .. " adet var"
+            if Labels[name] then
+                Labels[name]:Set(text)
+            else
+                Labels[name] = StockTab:CreateLabel(text)
+            end
+        end
+    end
+
+    -- Otomatik Tetikleyici (Her 3 saniyede bir kontrol et)
     task.spawn(function()
-        while task.wait(5) do
-            -- Replica Kontrollü Tetikleme Simülasyonu
-            local seeds = math.random(0, 100) 
-            local gears = math.random(0, 20)
-            SeedLabel:Set("🌱 Seeds Stock: " .. seeds)
-            GearLabel:Set("⚙️ Gears Stock: " .. gears)
+        while true do
+            RefreshUI()
+            task.wait(3)
         end
     end)
 
     StockTab:CreateButton({
-       Name = "Refresh Stock",
-       Callback = function()
-           Rayfield:Notify({Title = "Stock", Content = "Veriler Yenilendi!", Duration = 2})
-       end,
+        Name = "Manuel Yenile",
+        Callback = function()
+            RefreshUI()
+            Rayfield:Notify({Title = "Başarılı", Content = "Stoklar Güncellendi!", Duration = 2})
+        end,
     })
 end
 
--- 3. DOĞRULAMA TETİKLEYİCİ
+-- 4. DOĞRULAMA TETİĞİ
 VerifyBtn.MouseButton1Click:Connect(function()
     if tonumber(AnswerInput.Text) == dogru_cevap then
         ScreenGui:Destroy()
-        OpenRayfield()
+        StartHub()
     else
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        VerifyBtn.Text = "WRONG ANSWER"
-        task.wait(1)
+        VerifyBtn.Text = "YANLIŞ! TEKRAR DENE"
+        VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        task.wait(1.5)
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        VerifyBtn.Text = "REDEEM & OPEN HUB"
+        VerifyBtn.Text = "DOĞRULA VE STOKLARI AÇ"
     end
 end)
