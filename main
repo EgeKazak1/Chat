@@ -1,26 +1,26 @@
 --[[
-    GARDEN HORIZONS: ULTIMATE STOCK BYPASSER (RAYFIELD EDITION)
-    - Discord Webhook Devre Dışı (Tüm veriler menüde)
-    - Detaylı Eşya İsimlendirme & Bilgi Kartları
-    - Rarity & Description Entegrasyonu
-    - Canlı RemoteFunction Tetikleme
+    GARDEN HORIZONS: ALCHEMY HUB - FULL STOCK BYPASSER
+    - Rayfield UI Framework
+    - Live RemoteFunction Interception
+    - Auto-Update Metadata
 ]]--
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- AYARLAR
-local CHECK_INTERVAL = 45 -- Saniye cinsinden yenileme hızı
+local CHECK_INTERVAL = 30 -- Saniye cinsinden yenileme hızı
 
 -- 1. DOĞRULAMA EKRANI (Alchemy Tasarımı)
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local MainFrame = Instance.new("Frame", ScreenGui)
-local n1, n2 = math.random(10, 50), math.random(4, 9)
+local n1, n2 = math.random(10, 30), math.random(4, 9)
 local dogru_cevap = n1 * n2
 
 MainFrame.Size = UDim2.new(0, 340, 0, 240)
 MainFrame.Position = UDim2.new(0.5, -170, 0.5, -120)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 local Header = Instance.new("TextLabel", MainFrame)
@@ -31,45 +31,38 @@ Header.Font = Enum.Font.GothamBold
 Header.TextSize = 20
 Header.BackgroundTransparency = 1
 
-local InputBox = Instance.new("Frame", MainFrame)
-InputBox.Size = UDim2.new(0.85, 0, 0, 55)
-InputBox.Position = UDim2.new(0.075, 0, 0.45, 0)
-InputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Instance.new("UICorner", InputBox)
-
-local Question = Instance.new("TextLabel", InputBox)
-Question.Text = "  " .. n1 .. " x " .. n2 .. " ="
+local Question = Instance.new("TextLabel", MainFrame)
+Question.Text = "Doğrula: " .. n1 .. " x " .. n2 .. " kaç eder?"
+Question.Size = UDim2.new(1, 0, 0, 30)
+Question.Position = UDim2.new(0, 0, 0.4, 0)
 Question.TextColor3 = Color3.new(1, 1, 1)
-Question.Font = Enum.Font.GothamBold
-Question.Size = UDim2.new(0.4, 0, 1, 0)
 Question.BackgroundTransparency = 1
-Question.TextXAlignment = Enum.TextXAlignment.Left
+Question.Font = Enum.Font.Gotham
 
-local Answer = Instance.new("TextBox", InputBox)
-Answer.Size = UDim2.new(0.5, 0, 0.8, 0)
-Answer.Position = UDim2.new(0.45, 0, 0.1, 0)
+local Answer = Instance.new("TextBox", MainFrame)
+Answer.Size = UDim2.new(0.6, 0, 0, 40)
+Answer.Position = UDim2.new(0.2, 0, 0.55, 0)
 Answer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Answer.TextColor3 = Color3.fromRGB(0, 255, 127)
-Answer.PlaceholderText = "?"
+Answer.PlaceholderText = "Cevap..."
 Answer.Text = ""
 Instance.new("UICorner", Answer)
 
 local VerifyBtn = Instance.new("TextButton", MainFrame)
 VerifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.075, 0, 0.75, 0)
+VerifyBtn.Position = UDim2.new(0.075, 0, 0.78, 0)
 VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-VerifyBtn.Text = "MENÜYÜ AÇ"
+VerifyBtn.Text = "SİSTEMİ BAŞLAT"
 VerifyBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", VerifyBtn)
 
--- 2. VERİ YÖNETİCİSİ (Definitions & ShopData)
+-- 2. VERİ YÖNETİCİSİ
 local function GetMetaData(itemName)
-    local meta = {Rarity = "Common", Desc = "Açıklama yok."}
-    -- GearDefinitions.txt yapısına göre kontrol
-    local gearDefsModule = ReplicatedStorage:FindFirstChild("Gears") and ReplicatedStorage.Gears:FindFirstChild("Definitions") and ReplicatedStorage.Gears.Definitions:FindFirstChild("GearDefinitions")
-    if gearDefsModule then
-        local defs = require(gearDefsModule)
-        if defs.Gears and defs.Gears[itemName] then
+    local meta = {Rarity = "Common", Desc = "Bilgi alınamadı."}
+    local gearDefs = ReplicatedStorage:FindFirstChild("Gears") and ReplicatedStorage.Gears:FindFirstChild("Definitions")
+    if gearDefs then
+        local success, defs = pcall(require, gearDefs:FindFirstChild("GearDefinitions"))
+        if success and defs.Gears and defs.Gears[itemName] then
             meta.Rarity = defs.Gears[itemName].Rarity or "Common"
             meta.Desc = defs.Gears[itemName].GearDescription or "Açıklama yok."
         end
@@ -79,29 +72,15 @@ end
 
 local function FetchLiveStock(shopType)
     local list = {}
-    local remote = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild("GetShopData")
+    local remote = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("GetShopData")
     
     if remote and remote:IsA("RemoteFunction") then
         local success, data = pcall(function() return remote:InvokeServer(shopType) end)
         if success and data then
             for name, details in pairs(data) do
-                local amt = (typeof(details) == "table" and (details.Amount or (details.StockAmount and details.StockAmount[1]))) or details or 0
+                local amt = (typeof(details) == "table" and (details.Amount or details.StockAmount)) or details or 0
                 local meta = GetMetaData(name)
                 list[name] = {Amount = amt, Rarity = meta.Rarity, Desc = meta.Desc}
-            end
-        end
-    end
-
-    -- Yedek plan: Remote çalışmazsa Modül dosyasından isimleri çek
-    if next(list) == nil then
-        local modName = (shopType == "SeedShop" and "SeedShopData") or "GearShopData"
-        local mod = ReplicatedStorage:FindFirstChild("Shop") and ReplicatedStorage.Shop.ShopData:FindFirstChild(modName)
-        if mod then
-            local static = require(mod)
-            for k, v in pairs(static.ShopData) do
-                local name = v.Name or k
-                local meta = GetMetaData(name)
-                list[name] = {Amount = "Yükleniyor...", Rarity = meta.Rarity, Desc = meta.Desc}
             end
         end
     end
@@ -111,61 +90,56 @@ end
 -- 3. RAYFIELD ARAYÜZÜ
 local function StartRayfield()
     local Window = Rayfield:CreateWindow({
-        Name = "Alchemy Hub | Stok Takibi",
-        LoadingTitle = "Dosyalar Senkronize Ediliyor...",
+        Name = "Alchemy Hub | Garden Horizons",
+        LoadingTitle = "Veriler Çekiliyor...",
+        LoadingSubtitle = "by Alchemy",
         ConfigurationSaving = { Enabled = false }
     })
 
-    local SeedTab = Window:CreateTab("🌱 Tohumlar", 4483362458)
-    local GearTab = Window:CreateTab("⚙️ Ekipmanlar", 4483362458)
+    local SeedTab = Window:CreateTab("🌱 Tohumlar", nil)
+    local GearTab = Window:CreateTab("⚙️ Ekipmanlar", nil)
 
-    local seedLabels = {}
-    local gearLabels = {}
+    local seedPara = SeedTab:CreateParagraph({Title = "Yükleniyor...", Content = "Stoklar kontrol ediliyor..."})
+    local gearPara = GearTab:CreateParagraph({Title = "Yükleniyor...", Content = "Stoklar kontrol ediliyor..."})
 
-    -- Ekranda sürekli güncellenen döngü
     task.spawn(function()
         while true do
             -- Seeds Güncelleme
             local seeds = FetchLiveStock("SeedShop")
+            local seedText = ""
             for name, data in pairs(seeds) do
-                local labelText = "🌱 " .. name .. " | Stok: " .. tostring(data.Amount)
-                if not seedLabels[name] then
-                    seedLabels[name] = SeedTab:CreateParagraph({Title = name, Content = "Miktar: " .. tostring(data.Amount)})
-                else
-                    seedLabels[name]:Set({Title = name, Content = "Miktar: " .. tostring(data.Amount)})
-                end
+                seedText ..= "• " .. name .. ": " .. tostring(data.Amount) .. " adet\n"
             end
+            seedPara:Set({Title = "Güncel Tohum Stoğu", Content = seedText ~= "" and seedText or "Stokta ürün yok."})
 
             -- Gears Güncelleme
             local gears = FetchLiveStock("GearShop")
+            local gearText = ""
             for name, data in pairs(gears) do
-                local rEmoji = (data.Rarity == "Legendary" and "⭐") or (data.Rarity == "Epic" and "💜") or (data.Rarity == "Rare" and "💙") or "⚪"
-                local fullTitle = rEmoji .. " " .. name .. " [" .. data.Rarity .. "]"
-                local fullDesc = "Stok: " .. tostring(data.Amount) .. "\nBilgi: " .. data.Desc
-
-                if not gearLabels[name] then
-                    gearLabels[name] = GearTab:CreateParagraph({Title = fullTitle, Content = fullDesc})
-                else
-                    gearLabels[name]:Set({Title = fullTitle, Content = fullDesc})
-                end
+                local emoji = (data.Rarity == "Legendary" and "⭐") or (data.Rarity == "Epic" and "💜") or "⚪"
+                gearText ..= emoji .. " " .. name .. " [" .. data.Rarity .. "]\nStok: " .. tostring(data.Amount) .. "\n"
             end
+            gearPara:Set({Title = "Güncel Ekipman Stoğu", Content = gearText ~= "" and gearText or "Stokta ekipman yok."})
 
-            Rayfield:Notify({Title = "Sistem", Content = "Stoklar Güncellendi!", Duration = 2})
+            Rayfield:Notify({Title = "Stok Güncellendi", Content = "Tüm dükkan verileri yenilendi.", Duration = 3, Image = 4483362458})
             task.wait(CHECK_INTERVAL)
         end
     end)
 end
 
--- 4. VERIFY BUTONU
+-- 4. ETKİLEŞİM
 VerifyBtn.MouseButton1Click:Connect(function()
     if tonumber(Answer.Text) == dogru_cevap then
+        VerifyBtn.Text = "BAŞARILI!"
+        VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        task.wait(0.5)
         ScreenGui:Destroy()
         StartRayfield()
     else
-        VerifyBtn.Text = "HATALI!"
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        VerifyBtn.Text = "YANLIŞ CEVAP!"
+        VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         task.wait(1)
+        VerifyBtn.Text = "SİSTEMİ BAŞLAT"
         VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-        VerifyBtn.Text = "MENÜYÜ AÇ"
     end
 end)
