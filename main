@@ -1,7 +1,7 @@
 --[[
     Xeno Hub - Geliştirilmiş Versiyon
     Orijinal Geliştirici: Xeno
-    Yeniden Düzenleyen: Bazuka
+    Yeniden Düzenleyen: Leo
     Açıklama: Bu script Brookhaven oyunu için gelişmiş troll araçları sunar.
 ]]
 
@@ -9,16 +9,16 @@ local Libary = loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOP
 workspace.FallenPartsDestroyHeight = -math.huge
 
 local Window = Libary:MakeWindow({
-    Title = "Xeno Hub",
+    Title = "Hub Hub",
     SubTitle = "By Xeno Team",
-    LoadText = "Xeno Hub Yükleniyor...",
+    LoadText = "Hub Hub Yükleniyor...",
     Flags = "XenoHub"
 })
 
 -- Kısayol ve Menü Ayarları
 Window:AddMinimizeButton({
     Button = {
-        Image = 'rbxassetid://117646769248265',
+        Image = 'rbxassetid://76560659040388',
         BackgroundTransparency = 0,
         Size = UDim2.new(0, 35, 0, 35),
     },
@@ -29,7 +29,7 @@ Window:AddMinimizeButton({
 local InfoTab = Window:MakeTab({ Title = "Bilgi", Icon = "rbxassetid://15309138473" })
 InfoTab:AddSection({ "Script Bilgileri" })
 InfoTab:AddParagraph({ "Sahibi:", "Leo" })
-InfoTab:AddParagraph({ "Katkıda Bulunanlar:"..." })
+InfoTab:AddParagraph({ "Katkıda Bulunanlar:", "..." })
 InfoTab:AddParagraph({ "Sürüm:", "Brookhaven Gelişmiş Hub" })
 
 -- Yeniden Bağlanma Özelliği
