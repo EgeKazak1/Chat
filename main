@@ -408,7 +408,7 @@ ItemsTab:AddButton({
     Title = "👻 Ghost Detector",
     Callback = function()
         if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "GhostDetectorTool", LocalPlayer) 
+            TriggerEvent:FireServer("AcceptedToolToServer", "GhostDetector", LocalPlayer) 
         end
     end
 })
@@ -418,7 +418,7 @@ ItemsTab:AddButton({
     Title = "✨ Glow Stick Flashing",
     Callback = function()
         if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "GlowStick", LocalPlayer) 
+            TriggerEvent:FireServer("AcceptedToolToServer", "GlowStickFlashing", LocalPlayer) 
         end
     end
 })
