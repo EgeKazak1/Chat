@@ -391,4 +391,46 @@ ItemsTab:AddButton({
     end
 })
 
+-- Eklenen Yeni Özel Eşyalar
+
+-- 1. Candy Cane (Şeker Bastonu)
+ItemsTab:AddButton({
+    Title = "🍭 Candy Cane",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "CandyCane", LocalPlayer) 
+        end
+    end
+})
+
+-- 2. Ghost Detector (Hayalet Dedektörü)
+ItemsTab:AddButton({
+    Title = "👻 Ghost Detector",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "GhostDetector", LocalPlayer) 
+        end
+    end
+})
+
+-- 3. Glow Stick Flashing (Yanıp Sönen Işıklı Çubuk)
+ItemsTab:AddButton({
+    Title = "✨ Glow Stick Flashing",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "GlowStickFlashing", LocalPlayer) 
+        end
+    end
+})
+
+-- 4. Score Card (Puan Kartı)
+ItemsTab:AddButton({
+    Title = "🔢 Score Card",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "ScoreCard", LocalPlayer) 
+        end
+    end
+})
+
 print("Zyronis Hub başarıyla yüklendi!")
