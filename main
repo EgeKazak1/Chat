@@ -140,26 +140,21 @@ Troll:AddButton({
 
 -- Araba Sekmesi
 local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
--- ==========================================
--- VEHICLE CUSTOMIZATION & TURBO (ENGLISH)
--- ==========================================
+-- ======================================================
+-- ADVANCED VEHICLE SETTINGS (ENGLISH & FIXED RGB)
+-- ======================================================
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Variables for Decal and UUID
 local CurrentDecal = ""
 local CurrentVehicleUUID = nil
 
--- Variables for Spam Loops
-local spammingHeadLights = false
-local spammingHazardLights = false
-local spammingHorn = false
-
--- Function: Apply Tire Decal
+-- Function: Apply Wheel Decal
 local function ApplyDecal(decalId)
     if not CurrentVehicleUUID then return end
+    
     local formattedDecal = "http://www.roblox.com/asset/?id=" .. decalId
     
     pcall(function()
@@ -169,154 +164,243 @@ local function ApplyDecal(decalId)
         ReplicatedStorage.Remotes.ApplyStateToVehicle:InvokeServer(
             CurrentVehicleUUID,
             {
-                ["Appearance"] = {
-                    ["WheelDecal"] = formattedDecal,
-                    ["SuspensionHeight"] = 1.1,
+                ["Lights"] = {
+                    ["hazardsActive"] = false,
+                    ["lightsOn"] = false,
                 },
-                ["Sahip"] = LocalPlayer,
+                ["IsLocked"] = false,
+                ["Appearance"] = {
+                    ["IsSmoking"] = false,
+                    ["SuspensionHeight"] = 1.1,
+                    ["BabyCarSeatInstalledNumber"] = 0,
+                    ["IsOnFire"] = false,
+                    ["WheelDecal"] = formattedDecal,
+                },
+                ["Performance"] = {
+                    ["Turbo"] = 0,
+                    ["MaxSpeed"] = 25,
+                    ["DriftStrength"] = 1,
+                },
+                ["Owner"] = LocalPlayer,
             }
         )
     end)
 end
 
--- Track Spawned Vehicle UUID
+-- Track Spawned Vehicle
 ReplicatedStorage.Remotes.PlayerSpawnedVehicle.OnClientEvent:Connect(function(data)
     if data and data.uuid then
         CurrentVehicleUUID = data.uuid
     end
 end)
 
--- 1. TIRE DECAL SECTION
-CarTab:AddSection({ Name = "🛞 Tire Customization" })
+-- Section 1: Tire Decal
+CarTab:AddSection({ Name = "🛞 Tire Decal" })
 
-CarTab:AddTextbox({
-    Name = "Tire Decal ID",
+CarTab:AddTextBox({
+    Name = "Decal ID",
+    Description = "Enter Decal ID",
     Default = "",
-    PlaceholderText = "Enter Decal ID...",
+    PlaceholderText = "Enter ID...",
+    ClearText = false,
     Callback = function(text)
-        local cleanId = text:match("%d+")
-        if cleanId then CurrentDecal = cleanId end
+        if text and text:gsub(" ", ""):len() > 0 then
+            local cleanId = text:match("%d+")
+            if cleanId then
+                CurrentDecal = cleanId
+            end
+        end
     end
 })
 
 CarTab:AddButton({
-    Name = "Apply Decal to Wheels",
+    Name = "✅ Apply Decal",
     Callback = function()
-        if CurrentDecal ~= "" then ApplyDecal(CurrentDecal) end
+        if CurrentDecal and CurrentDecal:len() > 0 then
+            ApplyDecal(CurrentDecal)
+        end
     end
 })
 
--- 2. LIGHTS & HORN SPAM SECTION
+-- Section 2: Spams
+local spammingHeadLights = false
+local spammingHazardLights = false
+local spammingHorn = false
+
+local function spamHeadLights()
+    while spammingHeadLights do
+        ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
+        task.wait(0.1)
+    end
+end
+
+local function spamHazardLights()
+    while spammingHazardLights do
+        ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
+        task.wait(0.1)
+    end
+end
+
+local function spamPlayHorn()
+    while spammingHorn do
+        ReplicatedStorage.Remotes.PlayHorn:InvokeServer()
+        task.wait(0.1)
+    end
+end
+
 CarTab:AddSection({ Name = "🚨 Vehicle Spams" })
 
 CarTab:AddToggle({
-    Name = "Spam Headlights",
+    Name = "💡 Spam Headlights",
     Default = false,
     Callback = function(value)
         spammingHeadLights = value
-        task.spawn(function()
-            while spammingHeadLights do
-                ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
-                task.wait(0.1)
-            end
-        end)
+        if spammingHeadLights then
+            task.spawn(spamHeadLights)
+        else
+            task.wait(0.2)
+            ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
+        end
     end
 })
 
 CarTab:AddToggle({
-    Name = "Spam Hazard Lights",
+    Name = "🚨 Spam Hazard Lights",
     Default = false,
     Callback = function(value)
         spammingHazardLights = value
-        task.spawn(function()
-            while spammingHazardLights do
-                ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
-                task.wait(0.1)
-            end
-        end)
+        if spammingHazardLights then
+            task.spawn(spamHazardLights)
+        else
+            task.wait(0.2)
+            ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
+        end
     end
 })
 
 CarTab:AddToggle({
-    Name = "Spam Horn",
+    Name = "📢 Spam Horn",
     Default = false,
     Callback = function(value)
         spammingHorn = value
         if spammingHorn then
-            task.spawn(function()
-                while spammingHorn do
-                    ReplicatedStorage.Remotes.PlayHorn:InvokeServer()
-                    task.wait(0.1)
-                end
-            end)
+            task.spawn(spamPlayHorn)
         else
             ReplicatedStorage.Remotes.StopHorn:InvokeServer()
         end
     end
 })
 
--- 3. SPEED & TURBO SECTION (ALL CARS)
-CarTab:AddSection({ Name = "🏎️ Speed & Turbo Control" })
+-- Section 3: Speed & Turbo
+CarTab:AddSection({ Name = "🏎️ Speed Car & Turbo" })
 
 local speedValue = 200
 local turboValue = 11.3
 
-local function applyToAllCars(valueType, value)
-    if not workspace:FindFirstChild("Vehicles") then return end
-    for _, vehicle in pairs(workspace.Vehicles:GetChildren()) do
-        local seat = vehicle:FindFirstChild("Seats") and vehicle.Seats:FindFirstChild("VehicleSeat")
-        if seat then
-            pcall(function()
-                if valueType == "MaxSpeed" then seat.MaxSpeed = value
-                elseif valueType == "Turbo" then seat.Turbo = value end
-            end)
+local function getAllCars()
+    local cars = {}
+    if workspace:FindFirstChild("Vehicles") then
+        for _, vehicle in pairs(workspace.Vehicles:GetChildren()) do
+            if vehicle:FindFirstChild("Seats") and vehicle.Seats:FindFirstChild("VehicleSeat") then
+                table.insert(cars, vehicle)
+            end
         end
+    end
+    return cars
+end
+
+local function applyToAllCars(valueType, value)
+    local cars = getAllCars()
+    if #cars == 0 then return end
+    
+    for _, vehicle in pairs(cars) do
+        local vehicleSeat = vehicle.Seats.VehicleSeat
+        pcall(function()
+            if valueType == "MaxSpeed" then
+                vehicleSeat.MaxSpeed = value
+            elseif valueType == "Turbo" then
+                vehicleSeat.Turbo = value
+            end
+        end)
     end
 end
 
-CarTab:AddTextbox({
-    Name = "Set Max Speed",
+CarTab:AddTextBox({
+    Name = "🚀 Max Speed Value",
+    Description = "Enter max speed value",
     PlaceholderText = "200",
     Callback = function(Value)
-        speedValue = tonumber(Value) or 200
+        speedValue = tonumber(Value) or speedValue
+    end
+})
+
+CarTab:AddTextBox({
+    Name = "🔥 Turbo Power Value",
+    Description = "Enter turbo value",
+    PlaceholderText = "11.3",
+    Callback = function(Value)
+        turboValue = tonumber(Value) or turboValue
     end
 })
 
 CarTab:AddButton({
-    Name = "Apply Speed to All Cars",
-    Callback = function() applyToAllCars("MaxSpeed", speedValue) end
+    Name = "⚡ Apply Speed to All",
+    Callback = function()
+        applyToAllCars("MaxSpeed", speedValue)
+    end
 })
 
--- 4. OPTIMIZED RGB SECTION
-CarTab:AddSection({ Name = "🌈 Car RGB (Free Colors)" })
+CarTab:AddButton({
+    Name = "🔥 Apply Turbo to All",
+    Callback = function()
+        applyToAllCars("Turbo", turboValue)
+    end
+})
+
+-- Section 4: RGB (Fixed & Smooth)
+CarTab:AddSection({ Name = "🌈 Car RGB" })
 
 local isColorChanging = false
+local function changeCarColor()
+    while isColorChanging do
+        local hue = (tick() % 5) / 5
+        local color = Color3.fromHSV(hue, 1, 1)
+        pcall(function()
+            ReplicatedStorage.RE["1Venic1eColo1r"]:FireServer(color)
+        end)
+        task.wait(0.15) -- Smooth and safe delay
+    end
+end
+
 CarTab:AddToggle({
     Name = "Rainbow Car RGB",
     Default = false,
     Callback = function(state)
         isColorChanging = state
         if isColorChanging then
-            task.spawn(function()
-                while isColorChanging do
-                    -- Using HSV to RGB for smooth transition (Free in Brookhaven)
-                    local hue = tick() % 5 / 5
-                    local color = Color3.fromHSV(hue, 1, 1)
-                    
-                    pcall(function()
-                        -- Uses the main color remote
-                        ReplicatedStorage.RE["1Venic1eColo1r"]:FireServer(color)
-                    end)
-                    task.wait(0.1) -- Optimized delay to prevent lag
-                end
-            end)
+            task.spawn(changeCarColor)
         end
     end
 })
 
--- Fix for Loading State
-_G.hubCarregando = false
-end
+-- Initialization Fix
+_G.hubCarregando = true
+task.spawn(function()
+    local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+    if Remotes then
+        local ResetRemote = Remotes:WaitForChild("ResetCharacterAppearance", 10)
+        if ResetRemote then
+            local ResetOriginal = ResetRemote.FireServer
+            ResetRemote.FireServer = function(...)
+                if _G.hubCarregando then return end
+                return ResetOriginal(...)
+            end
+        end
+    end
+    task.wait(3)
+    _G.hubCarregando = false
+end)
+
 print("Zyronis Hub başarıyla yüklendi!")
 -- Eşyalar (Items) Sekmesi Oluşturma
 local ItemsTab = Window:MakeTab({ Title = "Eşyalar", Icon = "rbxassetid://15309138473" })
