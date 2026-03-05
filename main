@@ -138,14 +138,141 @@ Troll:AddButton({
     end
 })
 
--- Araba Sekmesi
-local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
-CarTab:AddSection({ "Araç Özellikleri" })
+-- ==========================================
+-- TURBO & ARAÇ GELİŞTİRMELERİ (CAR TAB)
+-- ==========================================
+local CarSection = CarTab:AddSection({ Name = "🚀 Turbo Kontrol Paneli" })
 
+-- Değişkenler
+local CarSpeed = 25
+local CarJump = 50
+local RainbowActive = false
+
+-- Mevcut Aracı Bulma Fonksiyonu
+local function GetCurrentVehicle()
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        local seat = char.Humanoid.SeatPart
+        if seat and seat:IsA("VehicleSeat") then
+            return seat
+        end
+    end
+    return nil
+end
+
+-- 1. Maksimum Hız (Turbo Speed)
+CarTab:AddSlider({
+    Name = "🏎️ Turbo Hız",
+    Min = 25,
+    Max = 1000, -- Çok yüksek hızlar kontrolü zorlaştırabilir
+    Default = 50,
+    Color = Color3.fromRGB(255, 50, 50),
+    Increment = 10,
+    Callback = function(Value)
+        CarSpeed = Value
+        local seat = GetCurrentVehicle()
+        if seat then
+            seat.MaxSpeed = Value
+        end
+    end
+})
+
+-- 2. Araç Zıplama (Super Jump)
+CarTab:AddSlider({
+    Name = "🦘 Araç Zıplama Gücü",
+    Min = 50,
+    Max = 800,
+    Default = 50,
+    Color = Color3.fromRGB(50, 255, 50),
+    Increment = 10,
+    Callback = function(Value)
+        local seat = GetCurrentVehicle()
+        if seat then
+            seat.JumpPower = Value
+        end
+    end
+})
+
+-- 3. Gökkuşağı Modu (RGB Araba)
+CarTab:AddToggle({
+    Name = "🌈 RGB Modu (Gökkuşağı)",
+    Default = false,
+    Callback = function(Value)
+        RainbowActive = Value
+        task.spawn(function()
+            while RainbowActive do
+                local seat = GetCurrentVehicle()
+                if seat then
+                    local color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+                    -- Brookhaven Renk Remote'u
+                    game:GetService("ReplicatedStorage").RE["1Venic1eColo1r"]:FireServer(color)
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+})
+
+-- 4. Drift Modu
+CarTab:AddToggle({
+    Name = "🏎️ Drift Modu",
+    Default = false,
+    Callback = function(Value)
+        local seat = GetCurrentVehicle()
+        if seat then
+            -- Sürtünmeyi azaltarak yanlamayı sağlar
+            seat.Friction = Value and 0.2 or 2
+        end
+    end
+})
+
+-- 5. Özel Plaka
+CarTab:AddTextbox({
+    Name = "🏷️ Özel Plaka Yazısı",
+    Default = "ZYRONIS",
+    TextDisappear = false,
+    Callback = function(Text)
+        game:GetService("ReplicatedStorage").RE["1Venic1ePlat1eTex1t"]:FireServer(Text)
+    end
+})
+
+-- 6. Aracı Havaya Işınla (Fly Mode - Turbo)
+local carFlyActive = false
+CarTab:AddToggle({
+    Name = "✈️ Uçuş Modu (Car Fly)",
+    Default = false,
+    Callback = function(Value)
+        carFlyActive = Value
+        local seat = GetCurrentVehicle()
+        if seat then
+            local bv = seat:FindFirstChild("BodyVelocity") or Instance.new("BodyVelocity", seat)
+            local bg = seat:FindFirstChild("BodyGyro") or Instance.new("BodyGyro", seat)
+            
+            bv.MaxForce = Vector3.new(1, 1, 1) * math.huge
+            bg.MaxTorque = Vector3.new(1, 1, 1) * math.huge
+            
+            task.spawn(function()
+                while carFlyActive do
+                    bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * CarSpeed
+                    bg.CFrame = workspace.CurrentCamera.CFrame
+                    task.wait()
+                end
+                bv:Destroy()
+                bg:Destroy()
+            end)
+        end
+    end
+})
+
+-- 7. Aracı Düzelt (Flip)
 CarTab:AddButton({
-    Name = "Hız Hilesi (Car Speed)",
+    Name = "🔄 Takla Atan Aracı Düzelt",
     Callback = function()
-        -- Araç hızını artıran script bloğu
+        local seat = GetCurrentVehicle()
+        if seat and seat.Parent then
+            local carModel = seat.Parent
+            carModel:SetPrimaryPartCFrame(carModel.PrimaryPart.CFrame * CFrame.Angles(0, 0, math.rad(180)))
+        end
     end
 })
 
