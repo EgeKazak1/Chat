@@ -140,16 +140,14 @@ Troll:AddButton({
 
 -- Araba Sekmesi
 local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
-CarTab:AddSection({ "Araç Özellikleri" })
-
--- Araç Değişkenleri
+local CarSection = CarTab:AddSection({ Name = "🚀 Turbo Kontrol Paneli" })
+-- Değişkenler
 local CarSpeed = 25
 local CarJump = 50
-local DriftPower = 0
-local CurrentVehicle = nil
+local RainbowActive = false
 
--- Yardımcı Fonksiyon: Karakterin Aracını Bul
-local function getVehicle()
+-- Mevcut Aracı Bulma Fonksiyonu
+local function GetCurrentVehicle()
     local char = game.Players.LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
         local seat = char.Humanoid.SeatPart
@@ -160,56 +158,51 @@ local function getVehicle()
     return nil
 end
 
-CarTab:AddSection({ Name = "Hız ve Sürüş Kontrolü" })
-
--- 1. Araç Hızı (Car Speed)
+-- 1. Maksimum Hız (Turbo Speed)
 CarTab:AddSlider({
-    Name = "Araç Hızı",
+    Name = "🏎️ Turbo Hız",
     Min = 25,
-    Max = 500,
-    Default = 25,
-    Color = Color3.fromRGB(255, 0, 0),
-    Increment = 5,
+    Max = 1000, -- Çok yüksek hızlar kontrolü zorlaştırabilir
+    Default = 50,
+    Color = Color3.fromRGB(255, 50, 50),
+    Increment = 10,
     Callback = function(Value)
         CarSpeed = Value
-        local seat = getVehicle()
+        local seat = GetCurrentVehicle()
         if seat then
             seat.MaxSpeed = Value
         end
     end
 })
 
--- 2. Araç Zıplama (Car Jump)
+-- 2. Araç Zıplama (Super Jump)
 CarTab:AddSlider({
-    Name = "Araç Zıplama Gücü",
+    Name = "🦘 Araç Zıplama Gücü",
     Min = 50,
-    Max = 500,
+    Max = 800,
     Default = 50,
-    Color = Color3.fromRGB(0, 255, 0),
+    Color = Color3.fromRGB(50, 255, 50),
     Increment = 10,
     Callback = function(Value)
-        local seat = getVehicle()
+        local seat = GetCurrentVehicle()
         if seat then
             seat.JumpPower = Value
         end
     end
 })
 
-CarTab:AddSection({ Name = "Görsel Özellikler" })
-
--- 3. Gökkuşağı Araba (RGB Car)
-local rgbLoop = false
+-- 3. Gökkuşağı Modu (RGB Araba)
 CarTab:AddToggle({
-    Name = "Gökkuşağı Araba (RGB)",
+    Name = "🌈 RGB Modu (Gökkuşağı)",
     Default = false,
     Callback = function(Value)
-        rgbLoop = Value
+        RainbowActive = Value
         task.spawn(function()
-            while rgbLoop do
-                local seat = getVehicle()
-                if seat and seat.Parent then
+            while RainbowActive do
+                local seat = GetCurrentVehicle()
+                if seat then
                     local color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-                    -- Brookhaven Remote Event ile renk değiştirme
+                    -- Brookhaven Renk Remote'u
                     game:GetService("ReplicatedStorage").RE["1Venic1eColo1r"]:FireServer(color)
                 end
                 task.wait(0.1)
@@ -218,66 +211,65 @@ CarTab:AddToggle({
     end
 })
 
--- 4. Özel Plaka Yazısı
+-- 4. Drift Modu
+CarTab:AddToggle({
+    Name = "🏎️ Drift Modu",
+    Default = false,
+    Callback = function(Value)
+        local seat = GetCurrentVehicle()
+        if seat then
+            -- Sürtünmeyi azaltarak yanlamayı sağlar
+            seat.Friction = Value and 0.2 or 2
+        end
+    end
+})
+
+-- 5. Özel Plaka
 CarTab:AddTextbox({
-    Name = "Özel Plaka Yaz",
-    Default = "Z-HUB",
+    Name = "🏷️ Özel Plaka Yazısı",
+    Default = "ZYRONIS",
     TextDisappear = false,
     Callback = function(Text)
         game:GetService("ReplicatedStorage").RE["1Venic1ePlat1eTex1t"]:FireServer(Text)
     end
 })
 
-CarTab:AddSection({ Name = "Troll ve Özel" })
-
--- 5. Drift Modu
+-- 6. Aracı Havaya Işınla (Fly Mode - Turbo)
+local carFlyActive = false
 CarTab:AddToggle({
-    Name = "Drift Modu",
+    Name = "✈️ Uçuş Modu (Car Fly)",
     Default = false,
     Callback = function(Value)
-        local seat = getVehicle()
+        carFlyActive = Value
+        local seat = GetCurrentVehicle()
         if seat then
-            seat.Friction = Value and 0.1 or 2 -- Sürtünmeyi düşürerek drift sağlar
-        end
-    end
-})
-
--- 6. Aracı Takla Attır (Flip Car)
-CarTab:AddButton({
-    Name = "Aracı Düzelt (Flip)",
-    Callback = function()
-        local seat = getVehicle()
-        if seat and seat.Parent then
-            seat.Parent:SetPrimaryPartCFrame(seat.Parent.PrimaryPart.CFrame * CFrame.Angles(0, 0, math.rad(180)))
-        end
-    end
-})
-
--- 7. Havada Yürüme (Fly Car - Basit)
-local carFly = false
-CarTab:AddToggle({
-    Name = "Araba Uçur (Basit)",
-    Default = false,
-    Callback = function(Value)
-        carFly = Value
-        local seat = getVehicle()
-        if seat then
-            local bg = seat:FindFirstChild("BodyGyro") or Instance.new("BodyGyro", seat)
             local bv = seat:FindFirstChild("BodyVelocity") or Instance.new("BodyVelocity", seat)
-            bg.P = 9e4
-            bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            local bg = seat:FindFirstChild("BodyGyro") or Instance.new("BodyGyro", seat)
+            
+            bv.MaxForce = Vector3.new(1, 1, 1) * math.huge
+            bg.MaxTorque = Vector3.new(1, 1, 1) * math.huge
             
             task.spawn(function()
-                while carFly do
-                    bv.Velocity = seat.CFrame.LookVector * CarSpeed
+                while carFlyActive do
+                    bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * CarSpeed
                     bg.CFrame = workspace.CurrentCamera.CFrame
                     task.wait()
                 end
-                bv.Velocity = Vector3.new(0,0,0)
                 bv:Destroy()
                 bg:Destroy()
             end)
+        end
+    end
+})
+
+-- 7. Aracı Düzelt (Flip)
+CarTab:AddButton({
+    Name = "🔄 Takla Atan Aracı Düzelt",
+    Callback = function()
+        local seat = GetCurrentVehicle()
+        if seat and seat.Parent then
+            local carModel = seat.Parent
+            carModel:SetPrimaryPartCFrame(carModel.PrimaryPart.CFrame * CFrame.Angles(0, 0, math.rad(180)))
         end
     end
 })
