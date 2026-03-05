@@ -149,4 +149,193 @@ CarTab:AddButton({
     end
 })
 
+-- Eşyalar (Items) Sekmesi Oluşturma
+local ItemsTab = Window:MakeTab({ Title = "Eşyalar", Icon = "rbxassetid://15309138473" })
+
+-- Değişkenleri bir kez tanımlayalım (Optimizasyon)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+local RE = ReplicatedStorage:FindFirstChild("RE")
+local TriggerEvent = RE and RE:FindFirstChild("1Playe1rTrigge1rEven1t")
+
+-- Yardımcı Fonksiyon: Bildirim Gönder
+local function sendNotify(title, text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = 3
+        })
+    end)
+end
+
+-- 1. Money Gun (Gelişmiş Kontrollü)
+ItemsTab:AddButton({
+    Title = "💸 Money Gun",
+    Callback = function()
+        local itemName = "MoneyGun"
+        local candidates = {"GetItem", "Getİtem", "Get_Item", "GetTool"}
+        
+        for _, name in ipairs(candidates) do
+            local r = RE:FindFirstChild(name)
+            if r then
+                if r:IsA("RemoteFunction") then r:InvokeServer(itemName)
+                else r:FireServer(itemName) end
+                sendNotify("Money Gun", name .. " üzerinden istendi.")
+                return
+            end
+        end
+        
+        if TriggerEvent then
+            TriggerEvent:FireServer("AcceptedToolToServer", itemName, LocalPlayer)
+            sendNotify("Money Gun", "Trigger ile verildi.")
+        end
+    end
+})
+
+-- 2. Glider
+ItemsTab:AddButton({
+    Title = "🪂 Glider",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Glider", LocalPlayer) end
+    end
+})
+
+-- 3. Snowball Cannon
+ItemsTab:AddButton({
+    Title = "❄️ Snowball Cannon",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "SnowballCannon", LocalPlayer) end
+    end
+})
+
+-- 4. Snowball
+ItemsTab:AddButton({
+    Title = "☃️ Snowball",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "SnowBall", LocalPlayer) end
+    end
+})
+
+-- 5. Lollipop Peppermint
+ItemsTab:AddButton({
+    Title = "🍭 Lollipop Peppermint",
+    Callback = function()
+        local names = {"LollipopPeppermint", "Lollipop_Peppermint", "Lollipop", "PeppermintLollipop"}
+        for _, n in ipairs(names) do
+            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
+        end
+    end
+})
+
+-- 6. Cannon
+ItemsTab:AddButton({
+    Title = "💣 Cannon",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Cannon", LocalPlayer) end
+    end
+})
+
+-- 7. Golden Basketball
+ItemsTab:AddButton({
+    Title = "🏀 Golden Basketball",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "GoldenBasketball", LocalPlayer) end
+    end
+})
+
+-- 8. Water Balloon
+ItemsTab:AddButton({
+    Title = "💦 Water Balloon",
+    Callback = function()
+        local toolRemote = RE:FindFirstChild("1Too1l")
+        if toolRemote then toolRemote:InvokeServer("PickingTools", "Water Balloon") end
+    end
+})
+
+-- 9. Egg Launcher
+ItemsTab:AddButton({
+    Title = "🥚 Egg Launcher",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "EggLauncher", LocalPlayer) end
+    end
+})
+
+-- 10. Scythe
+ItemsTab:AddButton({
+    Title = "🪓 Scythe",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Scythe", LocalPlayer) end
+    end
+})
+
+-- 11. Crystals
+ItemsTab:AddButton({
+    Title = "💎 Crystals",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Crystals", LocalPlayer) end
+    end
+})
+
+-- 12. Agency Book
+ItemsTab:AddButton({
+    Title = "📖 Agency Book",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "AgencyBook", LocalPlayer) end
+    end
+})
+
+-- 13. Power Key Card
+ItemsTab:AddButton({
+    Title = "🔑 Power Key Card",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "PowerKeyCard", LocalPlayer) end
+    end
+})
+
+-- 14. Arch Power Expired
+ItemsTab:AddButton({
+    Title = "Arch Power Expired",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "ArchPowerExpired", LocalPlayer) end
+    end
+})
+
+-- 15. Candy Basket
+ItemsTab:AddButton({
+    Title = "🧺 Candy Basket",
+    Callback = function()
+        local names = {"CandyBasket", "CandyBasketTool", "Candy_Basket"}
+        for _, n in ipairs(names) do
+            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
+        end
+    end
+})
+
+-- 16. Green Crystal (Uranium Rod)
+ItemsTab:AddButton({
+    Title = "🧪 Green Crystal",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "UraniumRod", LocalPlayer) end
+    end
+})
+
+-- 17. Chainsaw
+ItemsTab:AddButton({
+    Title = "🪚 Chainsaw",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Chainsaw", LocalPlayer) end
+    end
+})
+
+-- 18. Telekinesis V5 (Dış Kaynaklı)
+ItemsTab:AddSection({ Name = "Özel Yetenekler" })
+ItemsTab:AddButton({
+    Title = "🧠 Telekinesis V5",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOPOOF/fe-telekinessv5/refs/heads/main/Main.txt"))()
+    end
+})
+
 print("Zyronis Hub başarıyla yüklendi!")
