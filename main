@@ -682,7 +682,7 @@ Tab:AddSection({"🎨 Hazır Avatar Paketleri (VIP)"})
 
 Tab:AddParagraph({
     Title = "⚠️ Uyarı",
-    Content = "Bu avatarlar mevcut karakterini tamamen değiştirir."
+    Content = "Roblox kaynaklı bazı ID hataları nedeniyle bazı karakterler yüklenmeyebilir. Tüm paketleri yakında tek tek kontrol edip düzelteceğiz, takipte kalın!"
 })
 
 Tab:AddButton({
