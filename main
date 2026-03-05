@@ -1,6 +1,6 @@
 --[[
-    Zyronis Hub - Geliştirilmiş Versiyon
-    Orijinal Geliştirici: Zyronis
+    Xeno Hub - Geliştirilmiş Versiyon
+    Orijinal Geliştirici: Xeno
     Yeniden Düzenleyen: Bazuka
     Açıklama: Bu script Brookhaven oyunu için gelişmiş troll araçları sunar.
 ]]
@@ -9,16 +9,16 @@ local Libary = loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOP
 workspace.FallenPartsDestroyHeight = -math.huge
 
 local Window = Libary:MakeWindow({
-    Title = "Zyronis Hub",
-    SubTitle = "By Zyronis",
-    LoadText = "Zyronis Hub Yükleniyor...",
-    Flags = "ZyronisHub"
+    Title = "Xeno Hub",
+    SubTitle = "By Xeno Team",
+    LoadText = "Xeno Hub Yükleniyor...",
+    Flags = "XenoHub"
 })
 
 -- Kısayol ve Menü Ayarları
 Window:AddMinimizeButton({
     Button = {
-        Image = 'rbxassetid://76560659040388',
+        Image = 'rbxassetid://117646769248265',
         BackgroundTransparency = 0,
         Size = UDim2.new(0, 35, 0, 35),
     },
@@ -28,8 +28,8 @@ Window:AddMinimizeButton({
 -- Bilgi Sekmesi
 local InfoTab = Window:MakeTab({ Title = "Bilgi", Icon = "rbxassetid://15309138473" })
 InfoTab:AddSection({ "Script Bilgileri" })
-InfoTab:AddParagraph({ "Sahibi:", "Zyronis" })
-InfoTab:AddParagraph({ "Katkıda Bulunanlar:", "Lolytadev, Rick/Shadow ve Bazuka" })
+InfoTab:AddParagraph({ "Sahibi:", "Leo" })
+InfoTab:AddParagraph({ "Katkıda Bulunanlar:"..." })
 InfoTab:AddParagraph({ "Sürüm:", "Brookhaven Gelişmiş Hub" })
 
 -- Yeniden Bağlanma Özelliği
@@ -1388,7 +1388,7 @@ task.spawn(function()
     _G.hubCarregando = false
 end)
 
-print("Zyronis Hub başarıyla yüklendi!")
+print("Xeno Hub başarıyla yüklendi!")
 -- Eşyalar (Items) Sekmesi Oluşturma
 local ItemsTab = Window:MakeTab({ Title = "Eşyalar", Icon = "rbxassetid://15309138473" })
 
@@ -1705,4 +1705,4 @@ ItemsTab:AddButton({
     end
 })
 
-print("Zyronis Hub başarıyla yüklendi!")
+print("Xeno Hub başarıyla yüklendi!")
