@@ -338,4 +338,57 @@ ItemsTab:AddButton({
     end
 })
 
+-- Eklenen Yeni Itemler
+
+-- 1. Wheelbarrow (El Arabası)
+ItemsTab:AddButton({
+    Title = "🛒 Wheelbarrow",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Wheelbarrow", LocalPlayer) 
+        end
+    end
+})
+
+-- 2. Snowball (Kar Topu) - Alternatif İsim Kontrolüyle
+ItemsTab:AddButton({
+    Title = "☃️ Snowball",
+    Callback = function()
+        local names = {"snowball", "SnowBall", "Snowball"}
+        for _, n in ipairs(names) do
+            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
+        end
+    end
+})
+
+-- 3. Snow Cannon (Kar Topu Topu)
+ItemsTab:AddButton({
+    Title = "❄️ Snow Cannon",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "SnowballCannon", LocalPlayer) 
+        end
+    end
+})
+
+-- 4. Slingshot (Sapan)
+ItemsTab:AddButton({
+    Title = "🎯 Slingshot",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Slingshot", LocalPlayer) 
+        end
+    end
+})
+
+-- 5. Olympics (Olimpiyat Meşalesi/Eşyası)
+ItemsTab:AddButton({
+    Title = "🏅 Olympics",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Olympics", LocalPlayer) 
+        end
+    end
+})
+
 print("Zyronis Hub başarıyla yüklendi!")
