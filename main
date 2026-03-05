@@ -316,7 +316,7 @@ CarTab:AddToggle({
 
 -- Fix for Loading State
 _G.hubCarregando = false
-
+end
 print("Zyronis Hub başarıyla yüklendi!")
 -- Eşyalar (Items) Sekmesi Oluşturma
 local ItemsTab = Window:MakeTab({ Title = "Eşyalar", Icon = "rbxassetid://15309138473" })
