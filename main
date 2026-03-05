@@ -1,208 +1,188 @@
 --[[
-    XENO TEAM | BROOKHAVEN ULTIMATE EDITION
-    Developed for: Xeno Team
-    Status: FULL & ENHANCED
-    
-    Özellikler: 
-    - Xeno Özel Yükleme Ekranı
-    - Tüm Troll Metodları (Couch, Bus, Ban, Boat)
-    - Full Avatar & Item Hileleri
-    - Otomatik Soygun ve Dünya Sabotajı
+    🔥 XENO HUB v2.0 - FULL GELİŞTİRİLMİŞ SÜRÜM 🔥
+    Geliştirici: EgeKazak_Real1
+    Hedef Oyun: Brookhaven 🏡
 ]]
 
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local VIM = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
--- Xeno Tema Renkleri
-local XENO_PURPLE = Color3.fromRGB(145, 90, 230)
-local XENO_DARK = Color3.fromRGB(55, 35, 110)
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+local hrp = char:WaitForChild("HumanoidRootPart")
 
--- Arayüz Kütüphanesi
+-- Renk Teması
+local ANA_RENK = Color3.fromRGB(145, 90, 230)
+local ORTA_RENK = Color3.fromRGB(110, 70, 190)
+local KOYU_RENK = Color3.fromRGB(55, 35, 110)
+
+-- ==========================================
+-- 🚀 GELİŞMİŞ LOADING EKRANI
+-- ==========================================
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "XenoHubV2_Loading"
+ScreenGui.IgnoreGuiInset = true
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(1, 0, 1, 0)
+MainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+
+local Grad = Instance.new("UIGradient", MainFrame)
+Grad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, ANA_RENK), ColorSequenceKeypoint.new(1, KOYU_RENK)}
+Grad.Rotation = 90
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0.2, 0)
+Title.Position = UDim2.new(0, 0, 0.2, 0)
+Title.Text = "💎 XENO HUB v2.0 🚀"
+Title.Font = Enum.Font.GothamBlack
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextScaled = true
+Title.BackgroundTransparency = 1
+
+local BarBG = Instance.new("Frame", MainFrame)
+BarBG.Size = UDim2.new(0.4, 0, 0.02, 0)
+BarBG.Position = UDim2.new(0.3, 0, 0.7, 0)
+BarBG.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+
+local Bar = Instance.new("Frame", BarBG)
+Bar.Size = UDim2.new(0, 0, 1, 0)
+Bar.BackgroundColor3 = ANA_RENK
+
+-- Yükleme Animasyonu
+for i = 1, 100 do
+    Bar.Size = UDim2.new(i/100, 0, 1, 0)
+    task.wait(0.02)
+end
+ScreenGui:Destroy()
+
+-- ==========================================
+-- 🛠️ ANA MENÜ (RAYFIELD)
+-- ==========================================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({
-   Name = "Xeno Hub | Brookhaven ULTIMATE 🏆",
-   LoadingTitle = "Xeno Team Premier Pro",
-   LoadingSubtitle = "by Xeno Team",
-   ConfigurationSaving = { Enabled = true, FolderName = "XenoConfigs", FileName = "XenoUltimate" },
-   KeySystem = false 
+local Window = Rayfield:MakeWindow({
+    Name = "🔥 XENO HUB v2.0 🔥",
+    LoadingTitle = "Xeno Hub Yükleniyor...",
+    LoadingSubtitle = "Brookhaven Edition",
+    ConfigurationSaving = { Enabled = true, Folder = "XenoHub_Configs" }
 })
 
--- Durum Değişkenleri
-_G.TargetPlayer = ""
-_G.LoopBomb = false
-_G.AutoRob = false
+-- 🏠 ANA SAYFA (BİLGİ)
+local MainTab = Window:MakeTab({"Ana Sayfa 🏠", "home"})
+MainTab:AddSection({"📜 Kullanıcı Bilgileri"})
+MainTab:AddParagraph({"Kullanıcı:", player.Name})
+MainTab:AddParagraph({"Executor:", (identifyexecutor and identifyexecutor() or "Bilinmiyor")})
 
--- Fonksiyonlar
-local function GetPlayer(name)
-    name = name:lower()
-    for _, v in pairs(Players:GetPlayers()) do
-        if v.Name:lower():find(name) or v.DisplayName:lower():find(name) then
-            return v
+-- ⚡ OYUNCU AYARLARI
+local PlayerTab = Window:MakeTab({"Oyuncu ⚡", "user"})
+PlayerTab:AddSlider({
+    Name = "Yürüme Hızı",
+    Min = 16, Max = 300, Default = 16,
+    Callback = function(v) char.Humanoid.WalkSpeed = v end
+})
+PlayerTab:AddSlider({
+    Name = "Zıplama Gücü",
+    Min = 50, Max = 500, Default = 50,
+    Callback = function(v) char.Humanoid.JumpPower = v end
+})
+PlayerTab:AddToggle({
+    Name = "Noclip (Duvar Geçme)",
+    Default = false,
+    Callback = function(v)
+        _G.Noclip = v
+        RunService.Stepped:Connect(function()
+            if _G.Noclip then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    end
+})
+
+-- 🏙️ BROOKHAVEN ÖZEL
+local BkTab = Window:MakeTab({"Brookhaven 🏙️", "map"})
+BkTab:AddSection({"💰 Otomasyon"})
+BkTab:AddButton({
+    Name = "Otomatik Kasa Soy (Tüm Evler)",
+    Callback = function()
+        local lots = workspace:FindFirstChild("001_Lots")
+        if lots then
+            for _, lot in pairs(lots:GetChildren()) do
+                pcall(function()
+                    local safe = lot:FindFirstChild("Safe", true)
+                    if safe then
+                        hrp.CFrame = safe.CFrame
+                        task.wait(0.5)
+                        -- Brookhaven Kasa Soyma Remote'u (Temsili, güncel remote gerekebilir)
+                        ReplicatedStorage.Remotes.RobSafe:FireServer(lot.Name)
+                    end
+                end)
+            end
         end
     end
-    return nil
-end
-
--- TABS
-local TrollTab = Window:CreateTab("Troll Ana Menü", 4483362458)
-local AvatarTab = Window:CreateTab("Avatar & Item", 4483362458)
-local WorldTab = Window:CreateTab("Dünya & Soygun", 4483362458)
-local VehicleTab = Window:CreateTab("Araç Modifiye", 4483362458)
-local SettingsTab = Window:CreateTab("Sistem", 4483362458)
-
--- TROLL SEKMESİ
-TrollTab:CreateSection("Hedef Oyuncu Seçimi")
-TrollTab:CreateInput({
-   Name = "Oyuncu Adı",
-   PlaceholderText = "İsim yazın...",
-   Callback = function(Text) _G.TargetPlayer = Text end,
 })
 
-TrollTab:CreateSection("Gelişmiş Öldürme Metodları")
-TrollTab:CreateButton({
-   Name = "Couch Kill (Kanepe - Void)",
-   Callback = function()
-      local target = GetPlayer(_G.TargetPlayer)
-      if target and target.Character then
-         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer("Couch", target.Character.HumanoidRootPart.CFrame)
-         task.wait(0.2)
-         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer("Couch", CFrame.new(0, -1000, 0))
-      end
-   end,
+BkTab:AddSection({"📍 Işınlanma"})
+local locations = {
+    ["Banka"] = CFrame.new(-400, 20, -5),
+    ["Hastane"] = CFrame.new(-150, 20, 200),
+    ["Polis Merkezi"] = CFrame.new(-250, 20, -100),
+    ["Market"] = CFrame.new(-100, 20, -50)
+}
+BkTab:AddDropdown({
+    Name = "Konum Seç",
+    Options = {"Banka", "Hastane", "Polis Merkezi", "Market"},
+    Callback = function(loc)
+        if locations[loc] then hrp.CFrame = locations[loc] end
+    end
 })
 
-TrollTab:CreateButton({
-   Name = "Bus Kill (Okul Otobüsü)",
-   Callback = function()
-      local target = GetPlayer(_G.TargetPlayer)
-      if target then
-         RS:WaitForChild("RE"):WaitForChild("s1chool1bus"):FireServer(target.Name)
-         task.wait(0.5)
-         RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer("SetVehicleCFrame", CFrame.new(0, 9999, 0))
-      end
-   end,
-})
-
-TrollTab:CreateButton({
-   Name = "Fling (Askeri Bot İle)",
-   Callback = function()
-      RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer("SpawnVehicle", "MilitaryBoat", Player.Character.HumanoidRootPart.CFrame)
-      task.wait(0.3)
-      local boat = workspace.Vehicles:FindFirstChild(Player.Name .. "MilitaryBoat")
-      if boat then
-          local bV = Instance.new("BodyAngularVelocity", boat.PrimaryPart)
-          bV.AngularVelocity = Vector3.new(0, 99999, 0)
-          bV.MaxTorque = Vector3.new(0, 99999, 0)
-      end
-   end,
-})
-
--- AVATAR & ITEM SEKMESİ
-AvatarTab:CreateSection("Özel Itemler & Silahlar")
-AvatarTab:CreateButton({
-   Name = "Tüm Eşyaları Al (Tüm Toollar)",
-   Callback = function()
-      local tools = {"Bomb", "Hammer", "KeyCard", "Ladders", "SleepingBag"}
-      for _, tool in pairs(tools) do
-         local clickPart = workspace:WaitForChild("WorkspaceCom"):WaitForChild("001_CriminalWeapons"):WaitForChild("GiveTools"):FindFirstChild(tool)
-         if clickPart then fireclickdetector(clickPart.ClickDetector) end
-      end
-   end,
-})
-
-AvatarTab:CreateSection("Avatar Modifiye")
-AvatarTab:CreateButton({
-   Name = "Mini Avatar (0.3x)",
-   Callback = function() RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer("skinnyscale", 0.3) end,
-})
-AvatarTab:CreateButton({
-   Name = "Görünmez İsim",
-   Callback = function() RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer("setname", " ") end,
-})
-AvatarTab:CreateButton({
-   Name = "Stickman Ol",
-   Callback = function() RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer("setpackage", "Stickman") end,
-})
-
--- DÜNYA & SOYGUN SEKMESİ
-WorldTab:CreateSection("Otomatik İşlemler")
-WorldTab:CreateToggle({
-   Name = "Otomatik Kasa Patlat (Auto Rob)",
-   CurrentValue = false,
-   Callback = function(Value)
-      _G.AutoRob = Value
-      task.spawn(function()
-         while _G.AutoRob do
-            -- Banka Kasasına Işınlan ve Patlat
-            Player.Character.HumanoidRootPart.CFrame = CFrame.new(602, 38, -10) -- Banka Kasa Konumu (Örnek)
-            task.wait(1)
-            RS:WaitForChild("RE"):WaitForChild("1Blo1wBomb1sServe1r"):FireServer("Bomb" .. Player.Name)
-            task.wait(2)
-         end
-      end)
-   end,
-})
-
-WorldTab:CreateButton({
-   Name = "Tüm Işıkları Boz",
-   Callback = function()
-      while task.wait(0.1) do
-         RS:WaitForChild("RE"):WaitForChild("h1ouse1"):FireServer("LightSwitch", true)
-         task.wait(0.1)
-         RS:WaitForChild("RE"):WaitForChild("h1ouse1"):FireServer("LightSwitch", false)
-      end
-   end,
-})
-
--- ARAÇ SEKMESİ
-VehicleTab:CreateSection("Hız & Görünüm")
-VehicleTab:CreateSlider({
-   Name = "Araç Hızı (Speed)",
-   Range = {0, 250},
-   Increment = 10,
-   Suffix = "kmh",
-   CurrentValue = 50,
-   Callback = function(Value)
-      RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer("SetVehicleSpeed", Value)
-   end,
-})
-
-VehicleTab:CreateButton({
-   Name = "Rainbow Araba (Gökkuşağı)",
-   Callback = function()
-      task.spawn(function()
-         while true do
-            for i = 0, 1, 0.01 do
-               RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer("SetVehicleColor", Color3.fromHSV(i, 1, 1))
-               task.wait(0.1)
+-- 🌈 RGB & GÖRSEL
+local VisualTab = Window:MakeTab({"Görsel 🌈", "image"})
+VisualTab:AddToggle({
+    Name = "İsim RGB",
+    Default = false,
+    Callback = function(v)
+        _G.RGBName = v
+        task.spawn(function()
+            while _G.RGBName do
+                local col = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+                ReplicatedStorage.Remotes:FindFirstChild("1RPNam1eColo1r"):FireServer("PickingRPNameColor", col)
+                task.wait(0.1)
             end
-         end
-      end)
-   end,
+        end)
+    end
 })
 
--- SİSTEM SEKMESİ
-SettingsTab:CreateButton({
-   Name = "Sunucu Değiştir (Server Hop)",
-   Callback = function()
-      local PlaceID = game.PlaceId
-      local Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
-      for _, v in pairs(Site.data) do
-         if v.playing < v.maxPlayers then
-            game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, v.id, Player)
-         end
-      end
-   end,
+-- 🛡️ KORUMA & DİĞER
+local MiscTab = Window:MakeTab({"Diğer 🛡️", "shield"})
+MiscTab:AddButton({
+    Name = "Anti-AFK Aktif Et",
+    Callback = function()
+        player.Idled:Connect(function()
+            game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+        Rayfield:Notify({Title = "Başarılı", Content = "Anti-AFK Aktif!"})
+    end
 })
 
--- Başlangıç Bildirimi
-Rayfield:Notify({
-   Title = "Xeno Hub Ultimate Yüklendi!",
-   Content = "Xeno Team iyi eğlenceler diler.",
-   Duration = 5,
-   Image = 4483362458,
+-- 🎭 FE SCRIPTS (Önceki Scriptten Aktarılanlar)
+local FeTab = Window:MakeTab({"FE Scriptler 🎭", "star"})
+FeTab:AddButton({
+    Name = "Naruto FE",
+    Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/mxskf/Legal/refs/heads/main/Dboas"))() end
 })
+FeTab:AddButton({
+    Name = "7yd7 Emotes",
+    Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Hub/refs/heads/Branch/GUIS/Emotes.lua"))() end
+})
+
+Rayfield:LoadConfiguration()
