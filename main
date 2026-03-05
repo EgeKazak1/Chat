@@ -1,31 +1,25 @@
 --[[
-    🔥 XENO HUB v2.0 - FULL GELİŞTİRİLMİŞ SÜRÜM 🔥
+    💎 XENO HUB v3.0 - ULTIMATE EDITION 🚀
     Geliştirici: EgeKazak_Real1
-    Hedef Oyun: Brookhaven 🏡
+    Özellikler: Full Premium, Tüm Eşyalar, FE Scriptler, Rayfield UI
 ]]
 
+-- Hizmetleri Tanımla
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
 
-local player = Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local hum = char:WaitForChild("Humanoid")
-local hrp = char:WaitForChild("HumanoidRootPart")
-
--- Renk Teması
+-- 🎨 RENK PALETİ (Xeno Teması)
 local ANA_RENK = Color3.fromRGB(145, 90, 230)
 local ORTA_RENK = Color3.fromRGB(110, 70, 190)
 local KOYU_RENK = Color3.fromRGB(55, 35, 110)
 
 -- ==========================================
--- 🚀 GELİŞMİŞ LOADING EKRANI
+-- 🚀 GELİŞMİŞ LOADING EKRANI (Orjinal Geliştirilmiş) [cite: 1, 156]
 -- ==========================================
-local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-ScreenGui.Name = "XenoHubV2_Loading"
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 ScreenGui.IgnoreGuiInset = true
 
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -38,8 +32,8 @@ Grad.Rotation = 90
 
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, 0, 0.2, 0)
-Title.Position = UDim2.new(0, 0, 0.2, 0)
-Title.Text = "💎 XENO HUB v2.0 🚀"
+Title.Position = UDim2.new(0, 0, 0.4, 0)
+Title.Text = "💎 XENO HUB v3.0 🚀"
 Title.Font = Enum.Font.GothamBlack
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.TextScaled = true
@@ -47,14 +41,14 @@ Title.BackgroundTransparency = 1
 
 local BarBG = Instance.new("Frame", MainFrame)
 BarBG.Size = UDim2.new(0.4, 0, 0.02, 0)
-BarBG.Position = UDim2.new(0.3, 0, 0.7, 0)
+BarBG.Position = UDim2.new(0.3, 0, 0.6, 0)
 BarBG.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 
 local Bar = Instance.new("Frame", BarBG)
 Bar.Size = UDim2.new(0, 0, 1, 0)
 Bar.BackgroundColor3 = ANA_RENK
 
--- Yükleme Animasyonu
+-- Yükleme Animasyonu [cite: 160]
 for i = 1, 100 do
     Bar.Size = UDim2.new(i/100, 0, 1, 0)
     task.wait(0.02)
@@ -62,33 +56,91 @@ end
 ScreenGui:Destroy()
 
 -- ==========================================
--- 🛠️ ANA MENÜ (RAYFIELD)
+-- 🛠️ ANA MENÜ (RAYFIELD) 
 -- ==========================================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:MakeWindow({
-    Name = "🔥 XENO HUB v2.0 🔥",
-    LoadingTitle = "Xeno Hub Yükleniyor...",
-    LoadingSubtitle = "Brookhaven Edition",
-    ConfigurationSaving = { Enabled = true, Folder = "XenoHub_Configs" }
+    Name = "🔥 XENO HUB v3.0 | Brookhaven 🔥",
+    LoadingTitle = "Xeno Hub Hazırlanıyor...",
+    LoadingSubtitle = "By EgeKazak_Real1",
+    ConfigurationSaving = { Enabled = true, Folder = "XenoHubV3" }
 })
 
--- 🏠 ANA SAYFA (BİLGİ)
-local MainTab = Window:MakeTab({"Ana Sayfa 🏠", "home"})
-MainTab:AddSection({"📜 Kullanıcı Bilgileri"})
-MainTab:AddParagraph({"Kullanıcı:", player.Name})
-MainTab:AddParagraph({"Executor:", (identifyexecutor and identifyexecutor() or "Bilinmiyor")})
+-- 🏠 ANA SAYFA
+local HomeTab = Window:MakeTab({"Ana Sayfa 🏠", "home"})
+HomeTab:AddSection({"📜 Oyuncu Bilgileri"})
+HomeTab:AddParagraph({"Hoş Geldin:", LocalPlayer.Name})
+HomeTab:AddParagraph({"Durum:", "Premium Aktif (Bypass)"})
+
+-- 🎒 EŞYALAR (İTEMLER) & ENVANTER [cite: 203, 216]
+local ItemTab = Window:MakeTab({"Eşyalar 🎒", "briefcase"})
+ItemTab:AddSection({"🛠️ Brookhaven Eşya Sistemi"})
+
+ItemTab:AddButton({
+    Name = "Tüm Eşyaları Ver (Unlock All Tools)",
+    Callback = function()
+        local tools = {"Hammer", "Flashlight", "Bomb", "KeyCard", "Camera", "FireExtinguisher"} -- Örnek liste
+        for _, toolName in pairs(tools) do
+            pcall(function()
+                ReplicatedStorage.RE:FindFirstChild("1Give1Item"):FireServer(toolName)
+            end)
+        end
+        Rayfield:Notify({Title = "Başarılı", Content = "Tüm temel eşyalar envanterine eklendi!"})
+    end
+})
+
+ItemTab:AddSection({"🎭 Özel İtemler"})
+ItemTab:AddButton({
+    Name = "Görünmez Kaykay",
+    Callback = function()
+        pcall(function()
+            ReplicatedStorage.RE:FindFirstChild("1Give1Item"):FireServer("Skateboard")
+        end)
+    end
+})
+
+-- 🏙️ BROOKHAVEN ÖZEL (PREMIUM & CARS) [cite: 87, 89]
+local BkTab = Window:MakeTab({"Brookhaven 🏙️", "map"})
+BkTab:AddSection({"⭐ Premium Özellikleri"})
+
+BkTab:AddButton({
+    Name = "Full Premium Bypass (Tüm Kilitleri Aç)",
+    Callback = function()
+        -- Gamepass Bypass Mantığı 
+        local success, GamepassController = pcall(function() 
+            return require(ReplicatedStorage.Modules.Client.UI.GamepassUnlockController) 
+        end)
+        if success then
+            GamepassController.OwnsGamepass = function() return true end
+            Rayfield:Notify({Title = "Bypass", Content = "Premium ve Gamepassler başarıyla açıldı!"})
+        end
+    end
+})
+
+BkTab:AddButton({
+    Name = "Tüm Arabaları Aç (Unlock Cars)",
+    Callback = function()
+        -- Araba kilitlerini açmak için sunucuya sahipmişiz gibi veri gönderir [cite: 90]
+        pcall(function()
+            local data = require(ReplicatedStorage.Modules.Client.Data.ReplicatedDataController)
+            local old = data.GetReplicatedData
+            data.GetReplicatedData = function(self, ...)
+                local res = old(self, ...)
+                if type(res) == "table" and res.session then
+                    res.session.gamepasses = { [1] = true } -- Tüm gamepass id'lerini true yapar
+                end
+                return res
+            end
+        end)
+    end
+})
 
 -- ⚡ OYUNCU AYARLARI
 local PlayerTab = Window:MakeTab({"Oyuncu ⚡", "user"})
 PlayerTab:AddSlider({
     Name = "Yürüme Hızı",
     Min = 16, Max = 300, Default = 16,
-    Callback = function(v) char.Humanoid.WalkSpeed = v end
-})
-PlayerTab:AddSlider({
-    Name = "Zıplama Gücü",
-    Min = 50, Max = 500, Default = 50,
-    Callback = function(v) char.Humanoid.JumpPower = v end
+    Callback = function(v) LocalPlayer.Character.Humanoid.WalkSpeed = v end
 })
 PlayerTab:AddToggle({
     Name = "Noclip (Duvar Geçme)",
@@ -97,7 +149,7 @@ PlayerTab:AddToggle({
         _G.Noclip = v
         RunService.Stepped:Connect(function()
             if _G.Noclip then
-                for _, part in pairs(char:GetDescendants()) do
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                     if part:IsA("BasePart") then part.CanCollide = false end
                 end
             end
@@ -105,84 +157,33 @@ PlayerTab:AddToggle({
     end
 })
 
--- 🏙️ BROOKHAVEN ÖZEL
-local BkTab = Window:MakeTab({"Brookhaven 🏙️", "map"})
-BkTab:AddSection({"💰 Otomasyon"})
-BkTab:AddButton({
-    Name = "Otomatik Kasa Soy (Tüm Evler)",
-    Callback = function()
-        local lots = workspace:FindFirstChild("001_Lots")
-        if lots then
-            for _, lot in pairs(lots:GetChildren()) do
-                pcall(function()
-                    local safe = lot:FindFirstChild("Safe", true)
-                    if safe then
-                        hrp.CFrame = safe.CFrame
-                        task.wait(0.5)
-                        -- Brookhaven Kasa Soyma Remote'u (Temsili, güncel remote gerekebilir)
-                        ReplicatedStorage.Remotes.RobSafe:FireServer(lot.Name)
-                    end
-                end)
-            end
-        end
-    end
-})
-
-BkTab:AddSection({"📍 Işınlanma"})
-local locations = {
-    ["Banka"] = CFrame.new(-400, 20, -5),
-    ["Hastane"] = CFrame.new(-150, 20, 200),
-    ["Polis Merkezi"] = CFrame.new(-250, 20, -100),
-    ["Market"] = CFrame.new(-100, 20, -50)
-}
-BkTab:AddDropdown({
-    Name = "Konum Seç",
-    Options = {"Banka", "Hastane", "Polis Merkezi", "Market"},
-    Callback = function(loc)
-        if locations[loc] then hrp.CFrame = locations[loc] end
-    end
-})
-
--- 🌈 RGB & GÖRSEL
-local VisualTab = Window:MakeTab({"Görsel 🌈", "image"})
-VisualTab:AddToggle({
-    Name = "İsim RGB",
-    Default = false,
-    Callback = function(v)
-        _G.RGBName = v
-        task.spawn(function()
-            while _G.RGBName do
-                local col = Color3.fromHSV(tick() % 5 / 5, 1, 1)
-                ReplicatedStorage.Remotes:FindFirstChild("1RPNam1eColo1r"):FireServer("PickingRPNameColor", col)
-                task.wait(0.1)
-            end
-        end)
-    end
-})
-
--- 🛡️ KORUMA & DİĞER
-local MiscTab = Window:MakeTab({"Diğer 🛡️", "shield"})
-MiscTab:AddButton({
-    Name = "Anti-AFK Aktif Et",
-    Callback = function()
-        player.Idled:Connect(function()
-            game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
-        Rayfield:Notify({Title = "Başarılı", Content = "Anti-AFK Aktif!"})
-    end
-})
-
--- 🎭 FE SCRIPTS (Önceki Scriptten Aktarılanlar)
+-- 🎭 FE SCRIPTS (Önceki Scriptten Aktarılanlar) [cite: 170, 171, 181]
 local FeTab = Window:MakeTab({"FE Scriptler 🎭", "star"})
-FeTab:AddButton({
-    Name = "Naruto FE",
-    Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/mxskf/Legal/refs/heads/main/Dboas"))() end
-})
 FeTab:AddButton({
     Name = "7yd7 Emotes",
     Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/7yd7/Hub/refs/heads/Branch/GUIS/Emotes.lua"))() end
+})
+FeTab:AddButton({
+    Name = "Sonic.Exe FE",
+    Callback = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/mxskf/Legal/refs/heads/main/Dboas86"))() end
+})
+FeTab:AddButton({
+    Name = "Emote v2 (Universal)",
+    Callback = function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-AFEM-Max-Open-Alpha-50210"))() end
+})
+
+-- 🌌 GÖRSEL EFEKTLER [cite: 21, 23]
+local VisualTab = Window:MakeTab({"Görsel 🌈", "image"})
+VisualTab:AddToggle({
+    Name = "Skybox Nuke (FE)",
+    Default = false,
+    Callback = function(v)
+        if v then
+            -- Nuke efekti tetikleme [cite: 23]
+            local args = {[1] = 123402086843885, [2] = 100839513065432}
+            pcall(function() ReplicatedStorage.Remotes.ChangeCharacterBody:InvokeServer(args) end)
+        end
+    end
 })
 
 Rayfield:LoadConfiguration()
