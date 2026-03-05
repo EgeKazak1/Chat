@@ -450,7 +450,7 @@ ItemsTab:AddButton({
     Title = "🛷 Sled Vehicle 2",
     Callback = function()
         if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "SledVehicle2", LocalPlayer) 
+            TriggerEvent:FireServer("AcceptedToolToServer", "HovercraftOceanDetector", LocalPlayer) 
         end
     end
 })
@@ -460,7 +460,7 @@ ItemsTab:AddButton({
     Title = "❄️ Sled Vehicle FX",
     Callback = function()
         if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "SledVehicleFX", LocalPlayer) 
+            TriggerEvent:FireServer("AcceptedToolToServer", "PogoStick", LocalPlayer) 
         end
     end
 })
