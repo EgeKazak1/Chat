@@ -460,7 +460,7 @@ ItemsTab:AddButton({
     Title = "❄️ Sled Vehicle FX",
     Callback = function()
         if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "Skateboard", LocalPlayer) 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Skis", LocalPlayer) 
         end
     end
 })
