@@ -681,8 +681,8 @@ Tab:AddDropdown({
 Tab:AddSection({"🎨 Hazır Avatar Paketleri (VIP)"})
 
 Tab:AddParagraph({
-    Title = "⚠️ Uyarı : Roblox kaynaklı bazı ID hataları nedeniyle bazı karakterler yüklenmeyebilir. Tüm paketleri yakında tek tek kontrol edip düzelteceğiz, takipte kalın!",
-    Content = "..."
+    Title = "⚠️ Uyarı:",
+    Content = "Roblox kaynaklı bazı ID hataları nedeniyle bazı karakterler yüklenmeyebilir. Tüm paketleri yakında tek tek kontrol edip düzelteceğiz, takipte kalın!"
 })
 
 Tab:AddButton({
