@@ -2,10 +2,9 @@
     XENO TEAM | BROOKHAVEN EXPLOIT
     Developed for: Xeno Team
     Standard: Professional Edition
-    Features: Enhanced Kill Methods, Optimized Loops, Modern UI
+    Features: All Original Features + Xeno Optimizations
 ]]
 
--- Xeno Team UI Library (Rayfield tabanlı özelleştirilmiş yapı)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
@@ -17,7 +16,7 @@ local Window = Rayfield:CreateWindow({
       FolderName = "XenoConfigs",
       FileName = "XenoHub"
    },
-   KeySystem = false -- Gerekirse true yapılıp anahtar eklenebilir
+   KeySystem = false 
 })
 
 -- Değişkenler
@@ -26,6 +25,7 @@ local Character = Player.Character or Player.CharacterAdded:Wait()
 local RootPart = Character:WaitForChild("HumanoidRootPart")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local VIM = game:GetService("VirtualInputManager")
 
 -- Yardımcı Fonksiyonlar
 local function GetPlayer(name)
@@ -37,11 +37,12 @@ local function GetPlayer(name)
 end
 
 -- TABS
-local MainTab = Window:CreateTab("Oyuncu Troll", 4483362458) -- Ana Özellikler
+local MainTab = Window:CreateTab("Oyuncu Troll", 4483362458)
+local WorldTab = Window:CreateTab("Dünya & Ev", 4483362458)
 local VisualsTab = Window:CreateTab("Görsel & Avatar", 4483362458)
 local MiscTab = Window:CreateTab("Diğer", 4483362458)
 
--- MAIN FEATURES
+-- MAIN FEATURES (PLAYER TROLL)
 MainTab:CreateSection("Hedef Belirle")
 
 local targetPlayer = ""
@@ -61,13 +62,9 @@ MainTab:CreateButton({
    Callback = function()
       local target = GetPlayer(targetPlayer)
       if target then
-         -- Geliştirilmiş Xeno Çekme Mantığı
-         local args = { [1] = "Couch", [2] = target.Character.HumanoidRootPart.CFrame }
-         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer(unpack(args))
-         -- Void Işınlama
+         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer("Couch", target.Character.HumanoidRootPart.CFrame)
          task.wait(0.2)
-         local voidArgs = { [1] = "Couch", [2] = CFrame.new(0, -500, 0) }
-         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer(unpack(voidArgs))
+         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer("Couch", CFrame.new(0, -500, 0))
       end
    end,
 })
@@ -77,12 +74,19 @@ MainTab:CreateButton({
    Callback = function()
       local target = GetPlayer(targetPlayer)
       if target then
-         -- Otobüs çağırma ve hedefi içine alma
          RS:WaitForChild("RE"):WaitForChild("s1chool1bus"):FireServer(target.Name)
          task.wait(0.5)
-         -- Aracı harita dışına itme
-         local args = { [1] = "SetVehicleCFrame", [2] = CFrame.new(9999, 9999, 9999) }
-         RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer(unpack(args))
+         RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer("SetVehicleCFrame", CFrame.new(9999, 9999, 9999))
+      end
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "Evden Banlayarak Öldür (House Ban Kill)",
+   Callback = function()
+      local target = GetPlayer(targetPlayer)
+      if target then
+         RS:WaitForChild("RE"):WaitForChild("h1ouse1"):FireServer("BanUser", target)
       end
    end,
 })
@@ -90,19 +94,62 @@ MainTab:CreateButton({
 MainTab:CreateSection("Genel Troll")
 
 MainTab:CreateButton({
-   Name = "Ultra Fling (Hızlı Dönüş)",
+   Name = "Askeri Bot Fling (Military Boat)",
    Callback = function()
-      local Bam = Instance.new("BodyAngularVelocity")
-      Bam.Parent = RootPart
-      Bam.Name = "XenoFling"
-      Bam.AngularVelocity = Vector3.new(0, 99999, 0)
-      Bam.MaxTorque = Vector3.new(0, 99999, 0)
-      Bam.P = 1250
-      
-      task.wait(5) -- 5 saniye sonra durur
-      if RootPart:FindFirstChild("XenoFling") then
-          RootPart.XenoFling:Destroy()
+      RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer("SpawnVehicle", "MilitaryBoat", RootPart.CFrame)
+      task.wait(0.5)
+      local boat = workspace.Vehicles:FindFirstChild(Player.Name .. "MilitaryBoat")
+      if boat then
+          local bV = Instance.new("BodyAngularVelocity", boat.PrimaryPart)
+          bV.AngularVelocity = Vector3.new(0, 99999, 0)
+          bV.MaxTorque = Vector3.new(0, 99999, 0)
       end
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "Otomatik Bomba Patlat (Loop Bomb)",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.LoopBomb = Value
+      task.spawn(function()
+         while _G.LoopBomb do
+            local bombTool = workspace:WaitForChild("WorkspaceCom"):WaitForChild("001_CriminalWeapons"):WaitForChild("GiveTools"):WaitForChild("Bomb")
+            if bombTool then
+                fireclickdetector(bombTool.ClickDetector)
+                task.wait(0.1)
+                VIM:SendMouseButtonEvent(500, 500, 0, true, game, 0)
+                task.wait(0.1)
+                VIM:SendMouseButtonEvent(500, 500, 0, false, game, 0)
+                RS:WaitForChild("RE"):WaitForChild("1Blo1wBomb1sServe1r"):FireServer("Bomb" .. Player.Name)
+            end
+            task.wait(1.5)
+         end
+      end)
+   end,
+})
+
+-- WORLD & HOUSE FEATURES
+WorldTab:CreateSection("Ev İşlemleri")
+
+WorldTab:CreateButton({
+   Name = "Evi Herkese Aç (Unlock House)",
+   Callback = function()
+      RS:WaitForChild("RE"):WaitForChild("h1ouse1"):FireServer("HouseLock", false)
+   end,
+})
+
+WorldTab:CreateButton({
+   Name = "Tüm Işıkları Kapat",
+   Callback = function()
+      RS:WaitForChild("RE"):WaitForChild("h1ouse1"):FireServer("LightSwitch", false)
+   end,
+})
+
+WorldTab:CreateButton({
+   Name = "Yangın Çıkar",
+   Callback = function()
+      RS:WaitForChild("RE"):WaitForChild("h1ouse1"):FireServer("FirePlace", true)
    end,
 })
 
@@ -110,24 +157,39 @@ MainTab:CreateButton({
 VisualsTab:CreateSection("Avatar Dönüşümleri")
 
 VisualsTab:CreateButton({
-   Name = "Mini Karakter Ol",
+   Name = "Mini Karakter (0.3)",
    Callback = function()
-      local args = { [1] = "skinnyscale", [2] = 0.3 }
-      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer(unpack(args))
+      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer("skinnyscale", 0.3)
    end,
 })
 
 VisualsTab:CreateButton({
-   Name = "Stickman (Çöp Adam)",
+   Name = "Stickman Paketi",
    Callback = function()
-      -- Xeno Team Özel Stickman Ayarı
-      local args = { [1] = "setpackage", [2] = "Stickman" }
-      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer(unpack(args))
+      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer("setpackage", "Stickman")
+   end,
+})
+
+VisualsTab:CreateButton({
+   Name = "Görünmez İsim (No Name)",
+   Callback = function()
+      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer("setname", " ")
    end,
 })
 
 -- MISC TAB
-MiscTab:CreateSection("Sunucu Ayarları")
+MiscTab:CreateSection("Sistem Araçları")
+
+MiscTab:CreateToggle({
+   Name = "Anti-Sit (Oturmayı Engelle)",
+   CurrentValue = false,
+   Callback = function(Value)
+      Player.Character.Humanoid.Sit = false
+      Player.Character.Humanoid:GetPropertyChangedSignal("Sit"):Connect(function()
+         if Value then Player.Character.Humanoid.Sit = false end
+      end)
+   end,
+})
 
 MiscTab:CreateButton({
    Name = "Sunucu Değiştir (Server Hop)",
@@ -135,7 +197,6 @@ MiscTab:CreateButton({
       local PlaceID = game.PlaceId
       local AllIDs = {}
       local foundAnything = ""
-      local actualHour = os.date("!*t").hour
       local function TPReturner()
          local Site;
          if foundAnything == "" then
@@ -143,22 +204,12 @@ MiscTab:CreateButton({
          else
             Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
          end
-         local ID = ""
-         if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+         if Site.nextPageCursor and Site.nextPageCursor ~= "null" then
             foundAnything = Site.nextPageCursor
          end
-         local num = 0;
          for i,v in pairs(Site.data) do
-            ID = tostring(v.id)
             if tonumber(v.maxPlayers) > tonumber(v.playing) then
-               for _,Existing in pairs(AllIDs) do
-                  if ID == tostring(Existing) then
-                  end
-               end
-               num = num + 1
-               table.insert(AllIDs, ID)
-               wait()
-               game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, Player)
+               game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, v.id, Player)
             end
          end
       end
@@ -167,7 +218,7 @@ MiscTab:CreateButton({
 })
 
 MiscTab:CreateButton({
-   Name = "FPS Sabitleyici (Anti-Lag)",
+   Name = "FPS Boost / Anti-Lag",
    Callback = function()
       for _, v in pairs(workspace:GetDescendants()) do
          if v:IsA("BasePart") and not v.Parent:FindFirstChild("Humanoid") then
@@ -178,10 +229,10 @@ MiscTab:CreateButton({
    end,
 })
 
--- Bildirim
+-- Başlangıç Bildirimi
 Rayfield:Notify({
-   Title = "Xeno Hub Yüklendi!",
-   Content = "Xeno Team iyi oyunlar diler.",
+   Title = "Xeno Hub Aktif!",
+   Content = "Tüm orijinal özellikler yüklendi. Xeno Team iyi eğlenceler diler.",
    Duration = 5,
    Image = 4483362458,
 })
