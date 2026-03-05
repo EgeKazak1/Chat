@@ -25,21 +25,132 @@ Window:AddMinimizeButton({
     Corner = { CornerRadius = UDim.new(0, 100) },
 })
 
--- Bilgi Sekmesi
-local InfoTab = Window:MakeTab({ Title = "Bilgi", Icon = "rbxassetid://15309138473" })
-InfoTab:AddSection({ "Script Bilgileri" })
-InfoTab:AddParagraph({ "Sahibi:", "Leo" })
-InfoTab:AddParagraph({ "Katkıda Bulunanlar:", "..." })
-InfoTab:AddParagraph({ "Sürüm:", "Brookhaven Gelişmiş Hub" })
+local infoTab = Window:MakeTab({ "Bilgi 💎", "info" })
 
--- Yeniden Bağlanma Özelliği
-InfoTab:AddButton({
-    Name = "Sunucuya Yeniden Bağlan (Rejoin)",
-    Callback = function()
-        local TeleportService = game:GetService("TeleportService")
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
-    end
+infoTab:AddDiscordInvite({
+    Name = "XENO HUB",
+    Description = "https://discord.gg/FxQzXqzH",
+    Logo = "rbxassetid://76414491539900",
+    Invite = "https://discord.gg/FxQzXqzH",
 })
+
+infoTab:AddSection({ "📜 Komut Dosyası Bilgileri" })
+infoTab:AddParagraph({ "👤 Script Sahibi:", "EgeKazak_Real1" })
+infoTab:AddParagraph({ "🏷️ Hub & Geliştirici:", "XENO HUB & EgeKazak_Real1" })
+
+infoTab:AddSection({ "💡 Bilgi" })
+
+local function createInfoBlock(tab, title, initial)
+    local block
+    local ok = pcall(function()
+        block = tab:AddParagraph({ Title = title, Content = initial })
+    end)
+    if not ok or not block then
+        ok = pcall(function()
+            block = tab:AddLabel(title .. (initial and ("\n" .. initial) or ""))
+        end)
+    end
+    return block
+end
+
+local function setBlockText(block, title, text)
+    if not block then return end
+    local ok = pcall(function()
+        if block.Set then return block:Set(text) end
+        if block.SetDesc then return block:SetDesc(text) end
+        if block.SetText then return block:SetText(text) end
+        if block.Update then return block:Update(text) end
+        if block.Refresh then return block:Refresh(text) end
+    end)
+    if not ok then
+        pcall(function()
+            if block.Text ~= nil then
+                block.Text = title .. "\n" .. text
+            end
+        end)
+    end
+end
+
+local function getCurrentDate()
+    local currentTime = os.time()
+    return os.date("%d/%m/%Y", currentTime)
+end
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+local welcomeBlock = createInfoBlock(infoTab, "👋 Xeno Hub'a Hoş Geldiniz | Tarih:", getCurrentDate())
+infoTab:AddParagraph({ "👤 Kullanıcı Adınız: " .. (localPlayer.Name or "Bilinmiyor") })
+infoTab:AddParagraph({ "🆔 ID'niz: " .. tostring(localPlayer.UserId or 0) })
+
+local gameBlock    = createInfoBlock(infoTab, "🎮 Oynadığınız Oyun:", "Yükleniyor...")
+local timerBlock   = createInfoBlock(infoTab, "⏱️ Script Kullanım Süresi:", "00:00:00")
+local fpsBlock     = createInfoBlock(infoTab, "📊 FPS'niz:", "FPS: 0")
+local playersBlock = createInfoBlock(infoTab, "👥 Sunucudaki Oyuncu Sayısı:", tostring(#Players:GetPlayers()))
+
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local startClock = os.clock()
+local currentFPS = 0
+RunService.RenderStepped:Connect(function(dt)
+    currentFPS = math.floor(1/dt + 0.5)
+end)
+
+local function getCurrentGameName()
+    local success, gameInfo = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    if success and gameInfo and gameInfo.Name then
+        return gameInfo.Name
+    else
+        return "Bilinmeyen Oyun"
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        setBlockText(welcomeBlock, "👑 Xeno Hub'a Hoş Geldiniz | Tarih:", getCurrentDate())
+
+        local e = os.clock() - startClock
+        local h = math.floor(e/3600)
+        local m = math.floor((e%3600)/60)
+        local s = math.floor(e%60)
+        setBlockText(timerBlock, "⏱️ Script Kullanım Süresi:", string.format("%02d:%02d:%02d", h, m, s))
+
+        setBlockText(fpsBlock, "📊 FPS'niz:", "FPS: " .. tostring(currentFPS))
+        setBlockText(playersBlock, "👥 Sunucudaki Oyuncu Sayısı:", tostring(#Players:GetPlayers()))
+        setBlockText(gameBlock, "🎮 Oynadığınız Oyun:", getCurrentGameName())
+    end
+end)
+
+local function refreshPlayers()
+    setBlockText(playersBlock, "👥 Sunucudaki Oyuncu Sayısı:", tostring(#Players:GetPlayers()))
+end
+Players.PlayerAdded:Connect(refreshPlayers)
+Players.PlayerRemoving:Connect(refreshPlayers)
+
+infoTab:AddParagraph({ "🖥️ Kullanılan Executor: " .. (pcall(identifyexecutor) and identifyexecutor() or "Bilinmiyor") })
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+local RE = ReplicatedStorage:WaitForChild("RE")
 
 -- 🧍‍♂️ VIP DARK KARAKTER MENÜSÜ 🖤✨
 local Tab = Window:MakeTab({"🧍‍♂️ Avatar 🖤", "rbxassetid://10734952036"})
