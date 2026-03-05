@@ -1,145 +1,187 @@
 --[[
-    GARDEN HORIZONS: ALCHEMY HUB - FULL STOCK BYPASSER
-    - Rayfield UI Framework
-    - Live RemoteFunction Interception
-    - Auto-Update Metadata
-]]--
+    XENO TEAM | BROOKHAVEN EXPLOIT
+    Developed for: Xeno Team
+    Standard: Professional Edition
+    Features: Enhanced Kill Methods, Optimized Loops, Modern UI
+]]
 
+-- Xeno Team UI Library (Rayfield tabanlı özelleştirilmiş yapı)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- AYARLAR
-local CHECK_INTERVAL = 30 -- Saniye cinsinden yenileme hızı
+local Window = Rayfield:CreateWindow({
+   Name = "Xeno Hub | Brookhaven 🏆",
+   LoadingTitle = "Xeno Team Premier",
+   LoadingSubtitle = "by Xeno Team",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "XenoConfigs",
+      FileName = "XenoHub"
+   },
+   KeySystem = false -- Gerekirse true yapılıp anahtar eklenebilir
+})
 
--- 1. DOĞRULAMA EKRANI (Alchemy Tasarımı)
-local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-local MainFrame = Instance.new("Frame", ScreenGui)
-local n1, n2 = math.random(10, 30), math.random(4, 9)
-local dogru_cevap = n1 * n2
+-- Değişkenler
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
-MainFrame.Size = UDim2.new(0, 340, 0, 240)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -120)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BorderSizePixel = 0
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-
-local Header = Instance.new("TextLabel", MainFrame)
-Header.Text = "ALCHEMY HUB\nLive Stock Interface"
-Header.Size = UDim2.new(1, 0, 0, 60)
-Header.TextColor3 = Color3.fromRGB(0, 255, 127)
-Header.Font = Enum.Font.GothamBold
-Header.TextSize = 20
-Header.BackgroundTransparency = 1
-
-local Question = Instance.new("TextLabel", MainFrame)
-Question.Text = "Doğrula: " .. n1 .. " x " .. n2 .. " kaç eder?"
-Question.Size = UDim2.new(1, 0, 0, 30)
-Question.Position = UDim2.new(0, 0, 0.4, 0)
-Question.TextColor3 = Color3.new(1, 1, 1)
-Question.BackgroundTransparency = 1
-Question.Font = Enum.Font.Gotham
-
-local Answer = Instance.new("TextBox", MainFrame)
-Answer.Size = UDim2.new(0.6, 0, 0, 40)
-Answer.Position = UDim2.new(0.2, 0, 0.55, 0)
-Answer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Answer.TextColor3 = Color3.fromRGB(0, 255, 127)
-Answer.PlaceholderText = "Cevap..."
-Answer.Text = ""
-Instance.new("UICorner", Answer)
-
-local VerifyBtn = Instance.new("TextButton", MainFrame)
-VerifyBtn.Size = UDim2.new(0.85, 0, 0, 45)
-VerifyBtn.Position = UDim2.new(0.075, 0, 0.78, 0)
-VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-VerifyBtn.Text = "SİSTEMİ BAŞLAT"
-VerifyBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", VerifyBtn)
-
--- 2. VERİ YÖNETİCİSİ
-local function GetMetaData(itemName)
-    local meta = {Rarity = "Common", Desc = "Bilgi alınamadı."}
-    local gearDefs = ReplicatedStorage:FindFirstChild("Gears") and ReplicatedStorage.Gears:FindFirstChild("Definitions")
-    if gearDefs then
-        local success, defs = pcall(require, gearDefs:FindFirstChild("GearDefinitions"))
-        if success and defs.Gears and defs.Gears[itemName] then
-            meta.Rarity = defs.Gears[itemName].Rarity or "Common"
-            meta.Desc = defs.Gears[itemName].GearDescription or "Açıklama yok."
+-- Yardımcı Fonksiyonlar
+local function GetPlayer(name)
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v.Name:lower():find(name:lower()) or v.DisplayName:lower():find(name:lower()) then
+            return v
         end
     end
-    return meta
 end
 
-local function FetchLiveStock(shopType)
-    local list = {}
-    local remote = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("GetShopData")
-    
-    if remote and remote:IsA("RemoteFunction") then
-        local success, data = pcall(function() return remote:InvokeServer(shopType) end)
-        if success and data then
-            for name, details in pairs(data) do
-                local amt = (typeof(details) == "table" and (details.Amount or details.StockAmount)) or details or 0
-                local meta = GetMetaData(name)
-                list[name] = {Amount = amt, Rarity = meta.Rarity, Desc = meta.Desc}
+-- TABS
+local MainTab = Window:CreateTab("Oyuncu Troll", 4483362458) -- Ana Özellikler
+local VisualsTab = Window:CreateTab("Görsel & Avatar", 4483362458)
+local MiscTab = Window:CreateTab("Diğer", 4483362458)
+
+-- MAIN FEATURES
+MainTab:CreateSection("Hedef Belirle")
+
+local targetPlayer = ""
+MainTab:CreateInput({
+   Name = "Oyuncu Adı",
+   PlaceholderText = "İsim yazın...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+      targetPlayer = Text
+   end,
+})
+
+MainTab:CreateSection("İmha Yöntemleri")
+
+MainTab:CreateButton({
+   Name = "Kanepe İle Öldür (Couch Kill)",
+   Callback = function()
+      local target = GetPlayer(targetPlayer)
+      if target then
+         -- Geliştirilmiş Xeno Çekme Mantığı
+         local args = { [1] = "Couch", [2] = target.Character.HumanoidRootPart.CFrame }
+         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer(unpack(args))
+         -- Void Işınlama
+         task.wait(0.2)
+         local voidArgs = { [1] = "Couch", [2] = CFrame.new(0, -500, 0) }
+         RS:WaitForChild("RE"):WaitForChild("vibe"):FireServer(unpack(voidArgs))
+      end
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "Otobüs İle Uçur (Bus Kill)",
+   Callback = function()
+      local target = GetPlayer(targetPlayer)
+      if target then
+         -- Otobüs çağırma ve hedefi içine alma
+         RS:WaitForChild("RE"):WaitForChild("s1chool1bus"):FireServer(target.Name)
+         task.wait(0.5)
+         -- Aracı harita dışına itme
+         local args = { [1] = "SetVehicleCFrame", [2] = CFrame.new(9999, 9999, 9999) }
+         RS:WaitForChild("RE"):WaitForChild("v1ehicle1"):FireServer(unpack(args))
+      end
+   end,
+})
+
+MainTab:CreateSection("Genel Troll")
+
+MainTab:CreateButton({
+   Name = "Ultra Fling (Hızlı Dönüş)",
+   Callback = function()
+      local Bam = Instance.new("BodyAngularVelocity")
+      Bam.Parent = RootPart
+      Bam.Name = "XenoFling"
+      Bam.AngularVelocity = Vector3.new(0, 99999, 0)
+      Bam.MaxTorque = Vector3.new(0, 99999, 0)
+      Bam.P = 1250
+      
+      task.wait(5) -- 5 saniye sonra durur
+      if RootPart:FindFirstChild("XenoFling") then
+          RootPart.XenoFling:Destroy()
+      end
+   end,
+})
+
+-- VISUALS & AVATAR
+VisualsTab:CreateSection("Avatar Dönüşümleri")
+
+VisualsTab:CreateButton({
+   Name = "Mini Karakter Ol",
+   Callback = function()
+      local args = { [1] = "skinnyscale", [2] = 0.3 }
+      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer(unpack(args))
+   end,
+})
+
+VisualsTab:CreateButton({
+   Name = "Stickman (Çöp Adam)",
+   Callback = function()
+      -- Xeno Team Özel Stickman Ayarı
+      local args = { [1] = "setpackage", [2] = "Stickman" }
+      RS:WaitForChild("RE"):WaitForChild("A1vatar1Re1mote"):FireServer(unpack(args))
+   end,
+})
+
+-- MISC TAB
+MiscTab:CreateSection("Sunucu Ayarları")
+
+MiscTab:CreateButton({
+   Name = "Sunucu Değiştir (Server Hop)",
+   Callback = function()
+      local PlaceID = game.PlaceId
+      local AllIDs = {}
+      local foundAnything = ""
+      local actualHour = os.date("!*t").hour
+      local function TPReturner()
+         local Site;
+         if foundAnything == "" then
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+         else
+            Site = game.HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+         end
+         local ID = ""
+         if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+            foundAnything = Site.nextPageCursor
+         end
+         local num = 0;
+         for i,v in pairs(Site.data) do
+            ID = tostring(v.id)
+            if tonumber(v.maxPlayers) > tonumber(v.playing) then
+               for _,Existing in pairs(AllIDs) do
+                  if ID == tostring(Existing) then
+                  end
+               end
+               num = num + 1
+               table.insert(AllIDs, ID)
+               wait()
+               game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, Player)
             end
-        end
-    end
-    return list
-end
+         end
+      end
+      TPReturner()
+   end,
+})
 
--- 3. RAYFIELD ARAYÜZÜ
-local function StartRayfield()
-    local Window = Rayfield:CreateWindow({
-        Name = "Alchemy Hub | Garden Horizons",
-        LoadingTitle = "Veriler Çekiliyor...",
-        LoadingSubtitle = "by Alchemy",
-        ConfigurationSaving = { Enabled = false }
-    })
+MiscTab:CreateButton({
+   Name = "FPS Sabitleyici (Anti-Lag)",
+   Callback = function()
+      for _, v in pairs(workspace:GetDescendants()) do
+         if v:IsA("BasePart") and not v.Parent:FindFirstChild("Humanoid") then
+            v.Material = Enum.Material.SmoothPlastic
+         end
+      end
+      settings().Rendering.QualityLevel = 1
+   end,
+})
 
-    local SeedTab = Window:CreateTab("🌱 Tohumlar", nil)
-    local GearTab = Window:CreateTab("⚙️ Ekipmanlar", nil)
-
-    local seedPara = SeedTab:CreateParagraph({Title = "Yükleniyor...", Content = "Stoklar kontrol ediliyor..."})
-    local gearPara = GearTab:CreateParagraph({Title = "Yükleniyor...", Content = "Stoklar kontrol ediliyor..."})
-
-    task.spawn(function()
-        while true do
-            -- Seeds Güncelleme
-            local seeds = FetchLiveStock("SeedShop")
-            local seedText = ""
-            for name, data in pairs(seeds) do
-                seedText ..= "• " .. name .. ": " .. tostring(data.Amount) .. " adet\n"
-            end
-            seedPara:Set({Title = "Güncel Tohum Stoğu", Content = seedText ~= "" and seedText or "Stokta ürün yok."})
-
-            -- Gears Güncelleme
-            local gears = FetchLiveStock("GearShop")
-            local gearText = ""
-            for name, data in pairs(gears) do
-                local emoji = (data.Rarity == "Legendary" and "⭐") or (data.Rarity == "Epic" and "💜") or "⚪"
-                gearText ..= emoji .. " " .. name .. " [" .. data.Rarity .. "]\nStok: " .. tostring(data.Amount) .. "\n"
-            end
-            gearPara:Set({Title = "Güncel Ekipman Stoğu", Content = gearText ~= "" and gearText or "Stokta ekipman yok."})
-
-            Rayfield:Notify({Title = "Stok Güncellendi", Content = "Tüm dükkan verileri yenilendi.", Duration = 3, Image = 4483362458})
-            task.wait(CHECK_INTERVAL)
-        end
-    end)
-end
-
--- 4. ETKİLEŞİM
-VerifyBtn.MouseButton1Click:Connect(function()
-    if tonumber(Answer.Text) == dogru_cevap then
-        VerifyBtn.Text = "BAŞARILI!"
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-        task.wait(0.5)
-        ScreenGui:Destroy()
-        StartRayfield()
-    else
-        VerifyBtn.Text = "YANLIŞ CEVAP!"
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        task.wait(1)
-        VerifyBtn.Text = "SİSTEMİ BAŞLAT"
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-    end
-end)
+-- Bildirim
+Rayfield:Notify({
+   Title = "Xeno Hub Yüklendi!",
+   Content = "Xeno Team iyi oyunlar diler.",
+   Duration = 5,
+   Image = 4483362458,
+})
