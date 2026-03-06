@@ -9,7 +9,7 @@ local Libary = loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOP
 workspace.FallenPartsDestroyHeight = -math.huge
 
 local Window = Libary:MakeWindow({
-    Title = "Hub Hub",
+    Title = "Xeno Hub",
     SubTitle = "By Leo",
     LoadText = "Hub Hub Yükleniyor...",
     Flags = "XenoHub"
