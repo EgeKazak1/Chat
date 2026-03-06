@@ -1140,9 +1140,50 @@ Tab:AddButton({
 })
 
 -- ==========================================
--- 🚗 GAMEPASS BYPASS (ID: 1459820822)
+-- 🚀 REPLICATED STORAGE (REPLICA) BYPASS KURULUMU
 -- ==========================================
--- Oyunun senin bu gamepass'e sahip olduğunu sanmasını sağlayan hook işlemi
+local RS = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Klasörleri bul (Yoksa bekle)
+local RE = RS:FindFirstChild("RE") or RS:WaitForChild("RE", 5)
+local Remotes = RS:FindFirstChild("Remotes") or RS:WaitForChild("Remotes", 5)
+local VehiclePassID = 1459820822
+
+-- 🛠️ KLASÖR İÇİNE BYPASS İZNİ EKLEME FONKSİYONU
+-- Oyun RE veya Remotes klasörünü kontrol ettiğinde bypass'a izin verecek "özelliği" ekler.
+local function injectGamepassAuth(folder, passId)
+    if folder then
+        -- Direkt klasör içine ID doğrulayıcı ekle
+        if not folder:FindFirstChild(tostring(passId)) then
+            local authValue = Instance.new("BoolValue")
+            authValue.Name = tostring(passId)
+            authValue.Value = true
+            authValue.Parent = folder
+        end
+        
+        -- Bazı Brookhaven güncellemelerinde Gamepasses adlı alt klasör aranır
+        local gpFolder = folder:FindFirstChild("Gamepasses") or Instance.new("Folder")
+        gpFolder.Name = "Gamepasses"
+        gpFolder.Parent = folder
+        
+        if not gpFolder:FindFirstChild(tostring(passId)) then
+            local gpVal = Instance.new("BoolValue")
+            gpVal.Name = tostring(passId)
+            gpVal.Value = true
+            gpVal.Parent = gpFolder
+        end
+    end
+end
+
+-- Bypass iznini her iki klasöre de yerleştiriyoruz
+injectGamepassAuth(RE, VehiclePassID)
+injectGamepassAuth(Remotes, VehiclePassID)
+
+-- ==========================================
+-- 🚗 MARKETPLACE SERVICE HOOK (EKSTRA GÜVENLİK)
+-- ==========================================
 pcall(function()
     local MPS = game:GetService("MarketplaceService")
     local oldNamecall
@@ -1150,10 +1191,9 @@ pcall(function()
         local method = getnamecallmethod()
         local args = {...}
         
-        -- Eğer oyun gamepass kontrolü yapıyorsa ve ID Araç Özelleştirme ID'si ise TRUE döndür
         if not checkcaller() and self == MPS and method == "UserOwnsGamePassAsync" then
-            if args[1] == 1459820822 or args[2] == 1459820822 then
-                return true
+            if args[1] == VehiclePassID or args[2] == VehiclePassID then
+                return true -- Oyuna gamepass'e sahip olduğumuzu söylüyoruz
             end
         end
         return oldNamecall(self, ...)
@@ -1161,8 +1201,9 @@ pcall(function()
 end)
 
 -- ==========================================
--- 🌈 RGB SEKMESİ VE ARAYÜZ
+-- 🌈 ARAYÜZ (UI) KURULUMU
 -- ==========================================
+-- Not: Window değişkeninin ana scriptinde tanımlı olduğunu varsayıyoruz
 local RGBTab = Window:MakeTab({ "RGB 🌈", "rbxassetid://97889814027474" })
 
 RGBTab:AddSection({ "🎨 ÁREA RGB" })
@@ -1183,110 +1224,109 @@ RGBTab:AddTextBox({
 })
 
 -- ==========================================
--- 🛠️ ANA FONKSİYONLAR VE FİXLER
+-- 🛠️ ANA FONKSİYONLAR VE ÇİFT TETİKLEYİCİ
 -- ==========================================
 
--- Genel RGB Loop Fonksiyonu
 local function startRGBLoop(flagFunc, actionFunc, delayTime, mode)
     task.spawn(function()
         while flagFunc() do
             local hue = (tick() * rgbSpeed % 5) / 5
             local color
-            if mode == "normal" then
-                color = Color3.fromHSV(hue, 1, 1)
-            elseif mode == "dark" then
-                color = Color3.fromHSV(hue, 0.8, 0.4)
-            elseif mode == "vip" then
-                color = Color3.fromHSV(hue, 0.9, 0.3)
-            end
+            if mode == "normal" then color = Color3.fromHSV(hue, 1, 1)
+            elseif mode == "dark" then color = Color3.fromHSV(hue, 0.8, 0.4)
+            elseif mode == "vip" then color = Color3.fromHSV(hue, 0.9, 0.3) end
             
-            pcall(function()
-                actionFunc(color)
-            end)
+            pcall(function() actionFunc(color) end)
             task.wait(delayTime)
         end
     end)
 end
 
--- 🚗 ARAÇ RENK FİXİ (Unpatched Dex Method)
--- Sadece PickingCarColor bazen yetmez, güçlü bir bypass yazdık
+-- 🚗 ARAÇ RENK FİXİ (RE & REMOTES KLASÖRLERİNİ TETİKLER)
 local function fixCarColor(color)
     pcall(function()
-        -- Standart İstek
-        RE["1Player1sCa1r"]:FireServer("PickingCarColor", color)
-        -- Alternatif (Dex Explorer Unpatched) İstek
-        RE["1Player1sCa1r"]:FireServer("v_Customization", {["Color"] = color})
-        RE["1Player1sCa1r"]:FireServer("CarColor", color)
+        -- 1. RE Klasöründeki Eventleri Tetikle
+        if RE then
+            if RE:FindFirstChild("1Player1sCa1r") then
+                RE["1Player1sCa1r"]:FireServer("PickingCarColor", color)
+                RE["1Player1sCa1r"]:FireServer("v_Customization", {["Color"] = color})
+            end
+            if RE:FindFirstChild("CarCustomization") then
+                RE["CarCustomization"]:FireServer("Color", color)
+            end
+        end
+        
+        -- 2. Remotes Klasöründeki Eventleri Tetikle (Unpatched Method)
+        if Remotes then
+            -- Remotes içindeki potansiyel araç eventlerini bul ve ateşle
+            for _, remote in pairs(Remotes:GetChildren()) do
+                if remote:IsA("RemoteEvent") and (string.match(remote.Name, "Car") or string.match(remote.Name, "Vehicle")) then
+                    remote:FireServer("PickingCarColor", color)
+                    remote:FireServer("v_Customization", {["Color"] = color})
+                end
+            end
+        end
     end)
 end
 
-local rgbNome = false
-local rgbBio = false
-local rgbCasa = false
-local rgbCarro = false
+-- Standart RE Tetikleyicileri (İsim, Bio, Ev)
+local function fireStandardRE(eventName, actionName, color)
+    pcall(function()
+        if RE and RE:FindFirstChild(eventName) then
+            RE[eventName]:FireServer(actionName, color)
+        end
+        -- Alternatif olarak Remotes içinde de arar
+        if Remotes and Remotes:FindFirstChild(eventName) then
+            Remotes[eventName]:FireServer(actionName, color)
+        end
+    end)
+end
+
+local rgbNome, rgbBio, rgbCasa, rgbCarro = false, false, false, false
 
 -- ==========================================
--- 🌈 NORMAL RGB
+-- 🌈 NORMAL RGB SEKMESİ
 -- ==========================================
 
 RGBTab:AddToggle({
     Name = "🌈 Nome RGB",
-    Desc = "Nome RGB Normal",
     Default = false,
     Callback = function(v)
         rgbNome = v
-        if v then
-            startRGBLoop(function() return rgbNome end, function(color)
-                RE["1RPNam1eColo1r"]:FireServer("PickingRPNameColor", color)
-            end, 0.03, "normal")
-        end
+        if v then startRGBLoop(function() return rgbNome end, function(c) fireStandardRE("1RPNam1eColo1r", "PickingRPNameColor", c) end, 0.03, "normal") end
     end
 })
 
 RGBTab:AddToggle({
     Name = "🌈 Bio RGB",
-    Desc = "Bio RGB Normal",
     Default = false,
     Callback = function(v)
         rgbBio = v
-        if v then
-            startRGBLoop(function() return rgbBio end, function(color)
-                RE["1RPNam1eColo1r"]:FireServer("PickingRPBioColor", color)
-            end, 0.03, "normal")
-        end
+        if v then startRGBLoop(function() return rgbBio end, function(c) fireStandardRE("1RPNam1eColo1r", "PickingRPBioColor", c) end, 0.03, "normal") end
     end
 })
 
 RGBTab:AddToggle({
     Name = "🏠 RGB Casa",
-    Desc = "Casa RGB Normal",
     Default = false,
     Callback = function(v)
         rgbCasa = v
-        if v then
-            startRGBLoop(function() return rgbCasa end, function(color)
-                RE["1Player1sHous1e"]:FireServer("ColorPickHouse", color)
-            end, 0.1, "normal")
-        end
+        if v then startRGBLoop(function() return rgbCasa end, function(c) fireStandardRE("1Player1sHous1e", "ColorPickHouse", c) end, 0.1, "normal") end
     end
 })
 
 RGBTab:AddToggle({
-    Name = "🚗 Carro RGB (Bypasslı)",
-    Desc = "Carro RGB Normal (Gamepass Gerekmez)",
+    Name = "🚗 Carro RGB (Full Bypass)",
     Default = false,
     Callback = function(v)
         rgbCarro = v
-        if v then
-            startRGBLoop(function() return rgbCarro end, fixCarColor, 0.05, "normal")
-        end
+        if v then startRGBLoop(function() return rgbCarro end, fixCarColor, 0.05, "normal") end
     end
 })
 
 -- ==========================================
--- 🌑 DARK RGB
+-- 🌑 DARK RGB SEKMESİ
 -- ==========================================
-
 RGBTab:AddSection({ "🌑 DARK RGB" })
 
 RGBTab:AddToggle({
@@ -1294,11 +1334,7 @@ RGBTab:AddToggle({
     Default = false,
     Callback = function(v)
         rgbNome = v
-        if v then
-            startRGBLoop(function() return rgbNome end, function(color)
-                RE["1RPNam1eColo1r"]:FireServer("PickingRPNameColor", color)
-            end, 0.03, "dark")
-        end
+        if v then startRGBLoop(function() return rgbNome end, function(c) fireStandardRE("1RPNam1eColo1r", "PickingRPNameColor", c) end, 0.03, "dark") end
     end
 })
 
@@ -1307,11 +1343,7 @@ RGBTab:AddToggle({
     Default = false,
     Callback = function(v)
         rgbBio = v
-        if v then
-            startRGBLoop(function() return rgbBio end, function(color)
-                RE["1RPNam1eColo1r"]:FireServer("PickingRPBioColor", color)
-            end, 0.03, "dark")
-        end
+        if v then startRGBLoop(function() return rgbBio end, function(c) fireStandardRE("1RPNam1eColo1r", "PickingRPBioColor", c) end, 0.03, "dark") end
     end
 })
 
@@ -1320,29 +1352,22 @@ RGBTab:AddToggle({
     Default = false,
     Callback = function(v)
         rgbCasa = v
-        if v then
-            startRGBLoop(function() return rgbCasa end, function(color)
-                RE["1Player1sHous1e"]:FireServer("ColorPickHouse", color)
-            end, 0.1, "dark")
-        end
+        if v then startRGBLoop(function() return rgbCasa end, function(c) fireStandardRE("1Player1sHous1e", "ColorPickHouse", c) end, 0.1, "dark") end
     end
 })
 
 RGBTab:AddToggle({
-    Name = "🚗 Dark RGB Carro (Bypasslı)",
+    Name = "🚗 Dark RGB Carro (Full Bypass)",
     Default = false,
     Callback = function(v)
         rgbCarro = v
-        if v then
-            startRGBLoop(function() return rgbCarro end, fixCarColor, 0.05, "dark")
-        end
+        if v then startRGBLoop(function() return rgbCarro end, fixCarColor, 0.05, "dark") end
     end
 })
 
 -- ==========================================
--- 👑 VIP DARK RGB
+-- 👑 VIP DARK RGB SEKMESİ
 -- ==========================================
-
 RGBTab:AddSection({ "👑 VIP DARK RGB" })
 
 RGBTab:AddToggle({
@@ -1350,11 +1375,7 @@ RGBTab:AddToggle({
     Default = false,
     Callback = function(v)
         rgbNome = v
-        if v then
-            startRGBLoop(function() return rgbNome end, function(color)
-                RE["1RPNam1eColo1r"]:FireServer("PickingRPNameColor", color)
-            end, 0.03, "vip")
-        end
+        if v then startRGBLoop(function() return rgbNome end, function(c) fireStandardRE("1RPNam1eColo1r", "PickingRPNameColor", c) end, 0.03, "vip") end
     end
 })
 
@@ -1363,11 +1384,7 @@ RGBTab:AddToggle({
     Default = false,
     Callback = function(v)
         rgbBio = v
-        if v then
-            startRGBLoop(function() return rgbBio end, function(color)
-                RE["1RPNam1eColo1r"]:FireServer("PickingRPBioColor", color)
-            end, 0.03, "vip")
-        end
+        if v then startRGBLoop(function() return rgbBio end, function(c) fireStandardRE("1RPNam1eColo1r", "PickingRPBioColor", c) end, 0.03, "vip") end
     end
 })
 
@@ -1376,25 +1393,18 @@ RGBTab:AddToggle({
     Default = false,
     Callback = function(v)
         rgbCasa = v
-        if v then
-            startRGBLoop(function() return rgbCasa end, function(color)
-                RE["1Player1sHous1e"]:FireServer("ColorPickHouse", color)
-            end, 0.1, "vip")
-        end
+        if v then startRGBLoop(function() return rgbCasa end, function(c) fireStandardRE("1Player1sHous1e", "ColorPickHouse", c) end, 0.1, "vip") end
     end
 })
 
 RGBTab:AddToggle({
-    Name = "🚗 VIP Dark RGB Carro (Bypasslı)",
+    Name = "🚗 VIP Dark RGB Carro (Full Bypass)",
     Default = false,
     Callback = function(v)
         rgbCarro = v
-        if v then
-            startRGBLoop(function() return rgbCarro end, fixCarColor, 0.05, "vip")
-        end
+        if v then startRGBLoop(function() return rgbCarro end, fixCarColor, 0.05, "vip") end
     end
 })
-
 local Tab = Window:MakeTab({"Koruma 🛡️", "rbxassetid://11322093465"})
 
 local LocalPlayer = game:GetService("Players").LocalPlayer
