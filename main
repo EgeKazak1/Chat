@@ -18,7 +18,7 @@ local Window = Libary:MakeWindow({
 -- Kısayol ve Menü Ayarları
 Window:AddMinimizeButton({
     Button = {
-        Image = 'rbxassetid://117646769248265',
+        Image = 'rbxassetid://129326077891103',
         BackgroundTransparency = 0,
         Size = UDim2.new(0, 35, 0, 35),
     },
