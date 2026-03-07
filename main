@@ -2038,6 +2038,586 @@ Troll:AddButton({
     end
 })
 
+-- Araba Sekmesi
+local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
+-- ======================================================
+-- ADVANCED VEHICLE SETTINGS (ENGLISH & FIXED RGB)
+-- ======================================================
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local CurrentDecal = ""
+local CurrentVehicleUUID = nil
+
+-- Function: Apply Wheel Decal
+local function ApplyDecal(decalId)
+    if not CurrentVehicleUUID then return end
+    
+    local formattedDecal = "http://www.roblox.com/asset/?id=" .. decalId
+    
+    pcall(function()
+        local Remote = ReplicatedStorage.Remotes.SuspensionHeightChanged
+        firesignal(Remote.OnClientEvent, CurrentVehicleUUID)
+        
+        ReplicatedStorage.Remotes.ApplyStateToVehicle:InvokeServer(
+            CurrentVehicleUUID,
+            {
+                ["Lights"] = {
+                    ["hazardsActive"] = false,
+                    ["lightsOn"] = false,
+                },
+                ["IsLocked"] = false,
+                ["Appearance"] = {
+                    ["IsSmoking"] = false,
+                    ["SuspensionHeight"] = 1.1,
+                    ["BabyCarSeatInstalledNumber"] = 0,
+                    ["IsOnFire"] = false,
+                    ["WheelDecal"] = formattedDecal,
+                },
+                ["Performance"] = {
+                    ["Turbo"] = 0,
+                    ["MaxSpeed"] = 25,
+                    ["DriftStrength"] = 1,
+                },
+                ["Owner"] = LocalPlayer,
+            }
+        )
+    end)
+end
+
+-- Track Spawned Vehicle
+ReplicatedStorage.Remotes.PlayerSpawnedVehicle.OnClientEvent:Connect(function(data)
+    if data and data.uuid then
+        CurrentVehicleUUID = data.uuid
+    end
+end)
+
+-- Section 1: Tire Decal
+CarTab:AddSection({ Name = "🛞 Tire Decal" })
+
+CarTab:AddTextBox({
+    Name = "Decal ID",
+    Description = "Enter Decal ID",
+    Default = "",
+    PlaceholderText = "Enter ID...",
+    ClearText = false,
+    Callback = function(text)
+        if text and text:gsub(" ", ""):len() > 0 then
+            local cleanId = text:match("%d+")
+            if cleanId then
+                CurrentDecal = cleanId
+            end
+        end
+    end
+})
+
+CarTab:AddButton({
+    Name = "✅ Apply Decal",
+    Callback = function()
+        if CurrentDecal and CurrentDecal:len() > 0 then
+            ApplyDecal(CurrentDecal)
+        end
+    end
+})
+
+-- Section 2: Spams
+local spammingHeadLights = false
+local spammingHazardLights = false
+local spammingHorn = false
+
+local function spamHeadLights()
+    while spammingHeadLights do
+        ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
+        task.wait(0.1)
+    end
+end
+
+local function spamHazardLights()
+    while spammingHazardLights do
+        ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
+        task.wait(0.1)
+    end
+end
+
+local function spamPlayHorn()
+    while spammingHorn do
+        ReplicatedStorage.Remotes.PlayHorn:InvokeServer()
+        task.wait(0.1)
+    end
+end
+
+CarTab:AddSection({ Name = "🚨 Vehicle Spams" })
+
+CarTab:AddToggle({
+    Name = "💡 Spam Headlights",
+    Default = false,
+    Callback = function(value)
+        spammingHeadLights = value
+        if spammingHeadLights then
+            task.spawn(spamHeadLights)
+        else
+            task.wait(0.2)
+            ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
+        end
+    end
+})
+
+CarTab:AddToggle({
+    Name = "🚨 Spam Hazard Lights",
+    Default = false,
+    Callback = function(value)
+        spammingHazardLights = value
+        if spammingHazardLights then
+            task.spawn(spamHazardLights)
+        else
+            task.wait(0.2)
+            ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
+        end
+    end
+})
+
+CarTab:AddToggle({
+    Name = "📢 Spam Horn",
+    Default = false,
+    Callback = function(value)
+        spammingHorn = value
+        if spammingHorn then
+            task.spawn(spamPlayHorn)
+        else
+            ReplicatedStorage.Remotes.StopHorn:InvokeServer()
+        end
+    end
+})
+
+-- Section 3: Speed & Turbo
+CarTab:AddSection({ Name = "🏎️ Speed Car & Turbo" })
+
+local speedValue = 200
+local turboValue = 11.3
+
+local function getAllCars()
+    local cars = {}
+    if workspace:FindFirstChild("Vehicles") then
+        for _, vehicle in pairs(workspace.Vehicles:GetChildren()) do
+            if vehicle:FindFirstChild("Seats") and vehicle.Seats:FindFirstChild("VehicleSeat") then
+                table.insert(cars, vehicle)
+            end
+        end
+    end
+    return cars
+end
+
+local function applyToAllCars(valueType, value)
+    local cars = getAllCars()
+    if #cars == 0 then return end
+    
+    for _, vehicle in pairs(cars) do
+        local vehicleSeat = vehicle.Seats.VehicleSeat
+        pcall(function()
+            if valueType == "MaxSpeed" then
+                vehicleSeat.MaxSpeed = value
+            elseif valueType == "Turbo" then
+                vehicleSeat.Turbo = value
+            end
+        end)
+    end
+end
+
+CarTab:AddTextBox({
+    Name = "🚀 Max Speed Value",
+    Description = "Enter max speed value",
+    PlaceholderText = "200",
+    Callback = function(Value)
+        speedValue = tonumber(Value) or speedValue
+    end
+})
+
+CarTab:AddTextBox({
+    Name = "🔥 Turbo Power Value",
+    Description = "Enter turbo value",
+    PlaceholderText = "11.3",
+    Callback = function(Value)
+        turboValue = tonumber(Value) or turboValue
+    end
+})
+
+CarTab:AddButton({
+    Name = "⚡ Apply Speed to All",
+    Callback = function()
+        applyToAllCars("MaxSpeed", speedValue)
+    end
+})
+
+CarTab:AddButton({
+    Name = "🔥 Apply Turbo to All",
+    Callback = function()
+        applyToAllCars("Turbo", turboValue)
+    end
+})
+
+-- Section 4: RGB (Fixed & Smooth)
+CarTab:AddSection({ Name = "🌈 Car RGB" })
+
+local isColorChanging = false
+local function changeCarColor()
+    while isColorChanging do
+        local hue = (tick() % 5) / 5
+        local color = Color3.fromHSV(hue, 1, 1)
+        pcall(function()
+            ReplicatedStorage.RE["1Venic1eColo1r"]:FireServer(color)
+        end)
+        task.wait(0.15) -- Smooth and safe delay
+    end
+end
+
+CarTab:AddToggle({
+    Name = "Rainbow Car RGB",
+    Default = false,
+    Callback = function(state)
+        isColorChanging = state
+        if isColorChanging then
+            task.spawn(changeCarColor)
+        end
+    end
+})
+
+-- Initialization Fix
+_G.hubCarregando = true
+task.spawn(function()
+    local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+    if Remotes then
+        local ResetRemote = Remotes:WaitForChild("ResetCharacterAppearance", 10)
+        if ResetRemote then
+            local ResetOriginal = ResetRemote.FireServer
+            ResetRemote.FireServer = function(...)
+                if _G.hubCarregando then return end
+                return ResetOriginal(...)
+            end
+        end
+    end
+    task.wait(3)
+    _G.hubCarregando = false
+end)
+
+print("Xeno Hub başarıyla yüklendi!")
+-- Eşyalar (Items) Sekmesi Oluşturma
+local ItemsTab = Window:MakeTab({ Title = "Eşyalar", Icon = "rbxassetid://15309138473" })
+
+-- Değişkenleri bir kez tanımlayalım (Optimizasyon)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+local RE = ReplicatedStorage:FindFirstChild("RE")
+local TriggerEvent = RE and RE:FindFirstChild("1Playe1rTrigge1rEven1t")
+
+-- Yardımcı Fonksiyon: Bildirim Gönder
+local function sendNotify(title, text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = 3
+        })
+    end)
+end
+
+-- 1. Money Gun (Gelişmiş Kontrollü)
+ItemsTab:AddButton({
+    Title = "💸 Money Gun",
+    Callback = function()
+        local itemName = "MoneyGun"
+        local candidates = {"GetItem", "Getİtem", "Get_Item", "GetTool"}
+        
+        for _, name in ipairs(candidates) do
+            local r = RE:FindFirstChild(name)
+            if r then
+                if r:IsA("RemoteFunction") then r:InvokeServer(itemName)
+                else r:FireServer(itemName) end
+                sendNotify("Money Gun", name .. " üzerinden istendi.")
+                return
+            end
+        end
+        
+        if TriggerEvent then
+            TriggerEvent:FireServer("AcceptedToolToServer", itemName, LocalPlayer)
+            sendNotify("Money Gun", "Trigger ile verildi.")
+        end
+    end
+})
+
+-- 2. Glider
+ItemsTab:AddButton({
+    Title = "🪂 Glider",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Glider", LocalPlayer) end
+    end
+})
+
+-- 3. Snowball Cannon
+ItemsTab:AddButton({
+    Title = "❄️ Snowball Cannon",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "SnowballCannon", LocalPlayer) end
+    end
+})
+
+-- 4. Snowball
+ItemsTab:AddButton({
+    Title = "☃️ Snowball",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "SnowBall", LocalPlayer) end
+    end
+})
+
+-- 5. Lollipop Peppermint
+ItemsTab:AddButton({
+    Title = "🍭 Lollipop Peppermint",
+    Callback = function()
+        local names = {"LollipopPeppermint", "Lollipop_Peppermint", "Lollipop", "PeppermintLollipop"}
+        for _, n in ipairs(names) do
+            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
+        end
+    end
+})
+
+-- 6. Cannon
+ItemsTab:AddButton({
+    Title = "💣 Cannon",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Cannon", LocalPlayer) end
+    end
+})
+
+-- 7. Golden Basketball
+ItemsTab:AddButton({
+    Title = "🏀 Golden Basketball",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "GoldenBasketball", LocalPlayer) end
+    end
+})
+
+-- 8. Water Balloon
+ItemsTab:AddButton({
+    Title = "💦 Water Balloon",
+    Callback = function()
+        local toolRemote = RE:FindFirstChild("1Too1l")
+        if toolRemote then toolRemote:InvokeServer("PickingTools", "Water Balloon") end
+    end
+})
+
+-- 9. Egg Launcher
+ItemsTab:AddButton({
+    Title = "🥚 Egg Launcher",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "EggLauncher", LocalPlayer) end
+    end
+})
+
+-- 10. Scythe
+ItemsTab:AddButton({
+    Title = "🪓 Scythe",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Scythe", LocalPlayer) end
+    end
+})
+
+-- 11. Crystals
+ItemsTab:AddButton({
+    Title = "💎 Crystals",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Crystals", LocalPlayer) end
+    end
+})
+
+-- 12. Agency Book
+ItemsTab:AddButton({
+    Title = "📖 Agency Book",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "AgencyBook", LocalPlayer) end
+    end
+})
+
+-- 13. Power Key Card
+ItemsTab:AddButton({
+    Title = "🔑 Power Key Card",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "PowerKeyCard", LocalPlayer) end
+    end
+})
+
+-- 14. Arch Power Expired
+ItemsTab:AddButton({
+    Title = "Arch Power Expired",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "ArchPowerExpired", LocalPlayer) end
+    end
+})
+
+-- 15. Candy Basket
+ItemsTab:AddButton({
+    Title = "🧺 Candy Basket",
+    Callback = function()
+        local names = {"CandyBasket", "CandyBasketTool", "Candy_Basket"}
+        for _, n in ipairs(names) do
+            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
+        end
+    end
+})
+
+-- 16. Green Crystal (Uranium Rod)
+ItemsTab:AddButton({
+    Title = "🧪 Green Crystal",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "UraniumRod", LocalPlayer) end
+    end
+})
+
+-- 17. Chainsaw
+ItemsTab:AddButton({
+    Title = "🪚 Chainsaw",
+    Callback = function()
+        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Chainsaw", LocalPlayer) end
+    end
+})
+
+-- 18. Telekinesis V5 (Dış Kaynaklı)
+ItemsTab:AddSection({ Name = "Özel Yetenekler" })
+ItemsTab:AddButton({
+    Title = "🧠 Telekinesis V5",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOPOOF/fe-telekinessv5/refs/heads/main/Main.txt"))()
+    end
+})
+
+-- Eklenen Yeni Itemler
+
+-- 1. Wheelbarrow (El Arabası)
+ItemsTab:AddButton({
+    Title = "🛒 Wheelbarrow",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Wheelbarrow", LocalPlayer) 
+        end
+    end
+})
+
+-- 2. Snowball (Kar Topu) - Alternatif İsim Kontrolüyle
+ItemsTab:AddButton({
+    Title = "☃️ Snowball",
+    Callback = function()
+        local names = {"snowball", "SnowBall", "Snowball"}
+        for _, n in ipairs(names) do
+            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
+        end
+    end
+})
+
+-- 3. Snow Cannon (Kar Topu Topu)
+ItemsTab:AddButton({
+    Title = "❄️ Snow Cannon",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "SnowballCannon", LocalPlayer) 
+        end
+    end
+})
+
+-- 4. Slingshot (Sapan)
+ItemsTab:AddButton({
+    Title = "🎯 Slingshot",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Slingshot", LocalPlayer) 
+        end
+    end
+})
+
+-- 5. Olympics (Olimpiyat Meşalesi/Eşyası)
+ItemsTab:AddButton({
+    Title = "🏅 Olympics",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Olympics", LocalPlayer) 
+        end
+    end
+})
+
+-- Eklenen Yeni Özel Eşyalar
+
+-- 1. Candy Cane (Şeker Bastonu)
+ItemsTab:AddButton({
+    Title = "🍭 Candy Cane",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "CandyCane", LocalPlayer) 
+        end
+    end
+})
+
+-- 2. Ghost Detector (Hayalet Dedektörü)
+ItemsTab:AddButton({
+    Title = "👻 Ghost Detector",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "GhostDetector", LocalPlayer) 
+        end
+    end
+})
+
+-- 3. Glow Stick Flashing (Yanıp Sönen Işıklı Çubuk)
+ItemsTab:AddButton({
+    Title = "✨ Glow Stick Flashing",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "GlowStickFlashing", LocalPlayer) 
+        end
+    end
+})
+
+-- 4. Score Card (Puan Kartı)
+ItemsTab:AddButton({
+    Title = "🔢 Score Card",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "ScoreCardTool", LocalPlayer) 
+        end
+    end
+})
+
+-- Araç Bazlı Özel Eşyalar
+
+-- 1. Baby Walker Vehicle (Bebek Yürüteci)
+ItemsTab:AddButton({
+    Title = "🚼 Baby Walker",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "BabyWalkerVehicle", LocalPlayer) 
+        end
+    end
+})
+
+-- 2. Sled Vehicle 2 (Kızak Versiyon 2)
+ItemsTab:AddButton({
+    Title = "🛷 Sled Vehicle 2",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer", "Snowboard", LocalPlayer) 
+        end
+    end
+})
+
+-- 3. Sled Vehicle FX (Efektli Kızak)
+ItemsTab:AddButton({
+    Title = "❄️ Sled Vehicle FX",
+    Callback = function()
+        if TriggerEvent then 
+            TriggerEvent:FireServer("AcceptedToolToServer","FireServer", "Skateboard", LocalPlayer) 
+        end
+    end
+})
+
 local scriptsTab = Window:MakeTab({"🎭 Scripts Troll", "rbxassetid://6862780932"})
 
 scriptsTab:AddSection({ "🕳️ Black Hole" })
@@ -2705,588 +3285,9 @@ scriptsTab:AddSection({ "🚁 Drone Xeno" })
 scriptsTab:AddButton({
     Name = "🚁 Xeno Drone",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/EgeKazak1/Xeno-Hub-Drone/main/main"))()"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EgeKazak1/Xeno-Hub-Drone/main/main"))()
     end
 })
 
--- Araba Sekmesi
-local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
--- ======================================================
--- ADVANCED VEHICLE SETTINGS (ENGLISH & FIXED RGB)
--- ======================================================
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local CurrentDecal = ""
-local CurrentVehicleUUID = nil
-
--- Function: Apply Wheel Decal
-local function ApplyDecal(decalId)
-    if not CurrentVehicleUUID then return end
-    
-    local formattedDecal = "http://www.roblox.com/asset/?id=" .. decalId
-    
-    pcall(function()
-        local Remote = ReplicatedStorage.Remotes.SuspensionHeightChanged
-        firesignal(Remote.OnClientEvent, CurrentVehicleUUID)
-        
-        ReplicatedStorage.Remotes.ApplyStateToVehicle:InvokeServer(
-            CurrentVehicleUUID,
-            {
-                ["Lights"] = {
-                    ["hazardsActive"] = false,
-                    ["lightsOn"] = false,
-                },
-                ["IsLocked"] = false,
-                ["Appearance"] = {
-                    ["IsSmoking"] = false,
-                    ["SuspensionHeight"] = 1.1,
-                    ["BabyCarSeatInstalledNumber"] = 0,
-                    ["IsOnFire"] = false,
-                    ["WheelDecal"] = formattedDecal,
-                },
-                ["Performance"] = {
-                    ["Turbo"] = 0,
-                    ["MaxSpeed"] = 25,
-                    ["DriftStrength"] = 1,
-                },
-                ["Owner"] = LocalPlayer,
-            }
-        )
-    end)
-end
-
--- Track Spawned Vehicle
-ReplicatedStorage.Remotes.PlayerSpawnedVehicle.OnClientEvent:Connect(function(data)
-    if data and data.uuid then
-        CurrentVehicleUUID = data.uuid
-    end
-end)
-
--- Section 1: Tire Decal
-CarTab:AddSection({ Name = "🛞 Tire Decal" })
-
-CarTab:AddTextBox({
-    Name = "Decal ID",
-    Description = "Enter Decal ID",
-    Default = "",
-    PlaceholderText = "Enter ID...",
-    ClearText = false,
-    Callback = function(text)
-        if text and text:gsub(" ", ""):len() > 0 then
-            local cleanId = text:match("%d+")
-            if cleanId then
-                CurrentDecal = cleanId
-            end
-        end
-    end
-})
-
-CarTab:AddButton({
-    Name = "✅ Apply Decal",
-    Callback = function()
-        if CurrentDecal and CurrentDecal:len() > 0 then
-            ApplyDecal(CurrentDecal)
-        end
-    end
-})
-
--- Section 2: Spams
-local spammingHeadLights = false
-local spammingHazardLights = false
-local spammingHorn = false
-
-local function spamHeadLights()
-    while spammingHeadLights do
-        ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
-        task.wait(0.1)
-    end
-end
-
-local function spamHazardLights()
-    while spammingHazardLights do
-        ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
-        task.wait(0.1)
-    end
-end
-
-local function spamPlayHorn()
-    while spammingHorn do
-        ReplicatedStorage.Remotes.PlayHorn:InvokeServer()
-        task.wait(0.1)
-    end
-end
-
-CarTab:AddSection({ Name = "🚨 Vehicle Spams" })
-
-CarTab:AddToggle({
-    Name = "💡 Spam Headlights",
-    Default = false,
-    Callback = function(value)
-        spammingHeadLights = value
-        if spammingHeadLights then
-            task.spawn(spamHeadLights)
-        else
-            task.wait(0.2)
-            ReplicatedStorage.Remotes.ToggleHeadLights:InvokeServer()
-        end
-    end
-})
-
-CarTab:AddToggle({
-    Name = "🚨 Spam Hazard Lights",
-    Default = false,
-    Callback = function(value)
-        spammingHazardLights = value
-        if spammingHazardLights then
-            task.spawn(spamHazardLights)
-        else
-            task.wait(0.2)
-            ReplicatedStorage.Remotes.ToggleHazardLights:InvokeServer()
-        end
-    end
-})
-
-CarTab:AddToggle({
-    Name = "📢 Spam Horn",
-    Default = false,
-    Callback = function(value)
-        spammingHorn = value
-        if spammingHorn then
-            task.spawn(spamPlayHorn)
-        else
-            ReplicatedStorage.Remotes.StopHorn:InvokeServer()
-        end
-    end
-})
-
--- Section 3: Speed & Turbo
-CarTab:AddSection({ Name = "🏎️ Speed Car & Turbo" })
-
-local speedValue = 200
-local turboValue = 11.3
-
-local function getAllCars()
-    local cars = {}
-    if workspace:FindFirstChild("Vehicles") then
-        for _, vehicle in pairs(workspace.Vehicles:GetChildren()) do
-            if vehicle:FindFirstChild("Seats") and vehicle.Seats:FindFirstChild("VehicleSeat") then
-                table.insert(cars, vehicle)
-            end
-        end
-    end
-    return cars
-end
-
-local function applyToAllCars(valueType, value)
-    local cars = getAllCars()
-    if #cars == 0 then return end
-    
-    for _, vehicle in pairs(cars) do
-        local vehicleSeat = vehicle.Seats.VehicleSeat
-        pcall(function()
-            if valueType == "MaxSpeed" then
-                vehicleSeat.MaxSpeed = value
-            elseif valueType == "Turbo" then
-                vehicleSeat.Turbo = value
-            end
-        end)
-    end
-end
-
-CarTab:AddTextBox({
-    Name = "🚀 Max Speed Value",
-    Description = "Enter max speed value",
-    PlaceholderText = "200",
-    Callback = function(Value)
-        speedValue = tonumber(Value) or speedValue
-    end
-})
-
-CarTab:AddTextBox({
-    Name = "🔥 Turbo Power Value",
-    Description = "Enter turbo value",
-    PlaceholderText = "11.3",
-    Callback = function(Value)
-        turboValue = tonumber(Value) or turboValue
-    end
-})
-
-CarTab:AddButton({
-    Name = "⚡ Apply Speed to All",
-    Callback = function()
-        applyToAllCars("MaxSpeed", speedValue)
-    end
-})
-
-CarTab:AddButton({
-    Name = "🔥 Apply Turbo to All",
-    Callback = function()
-        applyToAllCars("Turbo", turboValue)
-    end
-})
-
--- Section 4: RGB (Fixed & Smooth)
-CarTab:AddSection({ Name = "🌈 Car RGB" })
-
-local isColorChanging = false
-local function changeCarColor()
-    while isColorChanging do
-        local hue = (tick() % 5) / 5
-        local color = Color3.fromHSV(hue, 1, 1)
-        pcall(function()
-            ReplicatedStorage.RE["1Venic1eColo1r"]:FireServer(color)
-        end)
-        task.wait(0.15) -- Smooth and safe delay
-    end
-end
-
-CarTab:AddToggle({
-    Name = "Rainbow Car RGB",
-    Default = false,
-    Callback = function(state)
-        isColorChanging = state
-        if isColorChanging then
-            task.spawn(changeCarColor)
-        end
-    end
-})
-
--- Initialization Fix
-_G.hubCarregando = true
-task.spawn(function()
-    local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
-    if Remotes then
-        local ResetRemote = Remotes:WaitForChild("ResetCharacterAppearance", 10)
-        if ResetRemote then
-            local ResetOriginal = ResetRemote.FireServer
-            ResetRemote.FireServer = function(...)
-                if _G.hubCarregando then return end
-                return ResetOriginal(...)
-            end
-        end
-    end
-    task.wait(3)
-    _G.hubCarregando = false
-end)
-
-print("Xeno Hub başarıyla yüklendi!")
--- Eşyalar (Items) Sekmesi Oluşturma
-local ItemsTab = Window:MakeTab({ Title = "Eşyalar", Icon = "rbxassetid://15309138473" })
-
--- Değişkenleri bir kez tanımlayalım (Optimizasyon)
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
-local RE = ReplicatedStorage:FindFirstChild("RE")
-local TriggerEvent = RE and RE:FindFirstChild("1Playe1rTrigge1rEven1t")
-
--- Yardımcı Fonksiyon: Bildirim Gönder
-local function sendNotify(title, text)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = title,
-            Text = text,
-            Duration = 3
-        })
-    end)
-end
-
--- 1. Money Gun (Gelişmiş Kontrollü)
-ItemsTab:AddButton({
-    Title = "💸 Money Gun",
-    Callback = function()
-        local itemName = "MoneyGun"
-        local candidates = {"GetItem", "Getİtem", "Get_Item", "GetTool"}
-        
-        for _, name in ipairs(candidates) do
-            local r = RE:FindFirstChild(name)
-            if r then
-                if r:IsA("RemoteFunction") then r:InvokeServer(itemName)
-                else r:FireServer(itemName) end
-                sendNotify("Money Gun", name .. " üzerinden istendi.")
-                return
-            end
-        end
-        
-        if TriggerEvent then
-            TriggerEvent:FireServer("AcceptedToolToServer", itemName, LocalPlayer)
-            sendNotify("Money Gun", "Trigger ile verildi.")
-        end
-    end
-})
-
--- 2. Glider
-ItemsTab:AddButton({
-    Title = "🪂 Glider",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Glider", LocalPlayer) end
-    end
-})
-
--- 3. Snowball Cannon
-ItemsTab:AddButton({
-    Title = "❄️ Snowball Cannon",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "SnowballCannon", LocalPlayer) end
-    end
-})
-
--- 4. Snowball
-ItemsTab:AddButton({
-    Title = "☃️ Snowball",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "SnowBall", LocalPlayer) end
-    end
-})
-
--- 5. Lollipop Peppermint
-ItemsTab:AddButton({
-    Title = "🍭 Lollipop Peppermint",
-    Callback = function()
-        local names = {"LollipopPeppermint", "Lollipop_Peppermint", "Lollipop", "PeppermintLollipop"}
-        for _, n in ipairs(names) do
-            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
-        end
-    end
-})
-
--- 6. Cannon
-ItemsTab:AddButton({
-    Title = "💣 Cannon",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Cannon", LocalPlayer) end
-    end
-})
-
--- 7. Golden Basketball
-ItemsTab:AddButton({
-    Title = "🏀 Golden Basketball",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "GoldenBasketball", LocalPlayer) end
-    end
-})
-
--- 8. Water Balloon
-ItemsTab:AddButton({
-    Title = "💦 Water Balloon",
-    Callback = function()
-        local toolRemote = RE:FindFirstChild("1Too1l")
-        if toolRemote then toolRemote:InvokeServer("PickingTools", "Water Balloon") end
-    end
-})
-
--- 9. Egg Launcher
-ItemsTab:AddButton({
-    Title = "🥚 Egg Launcher",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "EggLauncher", LocalPlayer) end
-    end
-})
-
--- 10. Scythe
-ItemsTab:AddButton({
-    Title = "🪓 Scythe",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Scythe", LocalPlayer) end
-    end
-})
-
--- 11. Crystals
-ItemsTab:AddButton({
-    Title = "💎 Crystals",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Crystals", LocalPlayer) end
-    end
-})
-
--- 12. Agency Book
-ItemsTab:AddButton({
-    Title = "📖 Agency Book",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "AgencyBook", LocalPlayer) end
-    end
-})
-
--- 13. Power Key Card
-ItemsTab:AddButton({
-    Title = "🔑 Power Key Card",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "PowerKeyCard", LocalPlayer) end
-    end
-})
-
--- 14. Arch Power Expired
-ItemsTab:AddButton({
-    Title = "Arch Power Expired",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "ArchPowerExpired", LocalPlayer) end
-    end
-})
-
--- 15. Candy Basket
-ItemsTab:AddButton({
-    Title = "🧺 Candy Basket",
-    Callback = function()
-        local names = {"CandyBasket", "CandyBasketTool", "Candy_Basket"}
-        for _, n in ipairs(names) do
-            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
-        end
-    end
-})
-
--- 16. Green Crystal (Uranium Rod)
-ItemsTab:AddButton({
-    Title = "🧪 Green Crystal",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "UraniumRod", LocalPlayer) end
-    end
-})
-
--- 17. Chainsaw
-ItemsTab:AddButton({
-    Title = "🪚 Chainsaw",
-    Callback = function()
-        if TriggerEvent then TriggerEvent:FireServer("AcceptedToolToServer", "Chainsaw", LocalPlayer) end
-    end
-})
-
--- 18. Telekinesis V5 (Dış Kaynaklı)
-ItemsTab:AddSection({ Name = "Özel Yetenekler" })
-ItemsTab:AddButton({
-    Title = "🧠 Telekinesis V5",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOPOOF/fe-telekinessv5/refs/heads/main/Main.txt"))()
-    end
-})
-
--- Eklenen Yeni Itemler
-
--- 1. Wheelbarrow (El Arabası)
-ItemsTab:AddButton({
-    Title = "🛒 Wheelbarrow",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "Wheelbarrow", LocalPlayer) 
-        end
-    end
-})
-
--- 2. Snowball (Kar Topu) - Alternatif İsim Kontrolüyle
-ItemsTab:AddButton({
-    Title = "☃️ Snowball",
-    Callback = function()
-        local names = {"snowball", "SnowBall", "Snowball"}
-        for _, n in ipairs(names) do
-            pcall(function() TriggerEvent:FireServer("AcceptedToolToServer", n, LocalPlayer) end)
-        end
-    end
-})
-
--- 3. Snow Cannon (Kar Topu Topu)
-ItemsTab:AddButton({
-    Title = "❄️ Snow Cannon",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "SnowballCannon", LocalPlayer) 
-        end
-    end
-})
-
--- 4. Slingshot (Sapan)
-ItemsTab:AddButton({
-    Title = "🎯 Slingshot",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "Slingshot", LocalPlayer) 
-        end
-    end
-})
-
--- 5. Olympics (Olimpiyat Meşalesi/Eşyası)
-ItemsTab:AddButton({
-    Title = "🏅 Olympics",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "Olympics", LocalPlayer) 
-        end
-    end
-})
-
--- Eklenen Yeni Özel Eşyalar
-
--- 1. Candy Cane (Şeker Bastonu)
-ItemsTab:AddButton({
-    Title = "🍭 Candy Cane",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "CandyCane", LocalPlayer) 
-        end
-    end
-})
-
--- 2. Ghost Detector (Hayalet Dedektörü)
-ItemsTab:AddButton({
-    Title = "👻 Ghost Detector",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "GhostDetector", LocalPlayer) 
-        end
-    end
-})
-
--- 3. Glow Stick Flashing (Yanıp Sönen Işıklı Çubuk)
-ItemsTab:AddButton({
-    Title = "✨ Glow Stick Flashing",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "GlowStickFlashing", LocalPlayer) 
-        end
-    end
-})
-
--- 4. Score Card (Puan Kartı)
-ItemsTab:AddButton({
-    Title = "🔢 Score Card",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "ScoreCardTool", LocalPlayer) 
-        end
-    end
-})
-
--- Araç Bazlı Özel Eşyalar
-
--- 1. Baby Walker Vehicle (Bebek Yürüteci)
-ItemsTab:AddButton({
-    Title = "🚼 Baby Walker",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "BabyWalkerVehicle", LocalPlayer) 
-        end
-    end
-})
-
--- 2. Sled Vehicle 2 (Kızak Versiyon 2)
-ItemsTab:AddButton({
-    Title = "🛷 Sled Vehicle 2",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer", "Snowboard", LocalPlayer) 
-        end
-    end
-})
-
--- 3. Sled Vehicle FX (Efektli Kızak)
-ItemsTab:AddButton({
-    Title = "❄️ Sled Vehicle FX",
-    Callback = function()
-        if TriggerEvent then 
-            TriggerEvent:FireServer("AcceptedToolToServer","FireServer", "Skateboard", LocalPlayer) 
-        end
-    end
-})
 
 print("Xeno Hub başarıyla yüklendi!")
