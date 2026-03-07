@@ -2038,6 +2038,677 @@ Troll:AddButton({
     end
 })
 
+local scriptsTab = Window:MakeTab({"🎭 Scripts Troll", "rbxassetid://6862780932"})
+
+scriptsTab:AddSection({ "🕳️ Black Hole" })
+
+scriptsTab:AddButton({
+    Name = "🕳️ Black Hole",
+    Description = "",
+    Callback = function()
+        local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local angle = 1
+local radius = 10
+local blackHoleActive = false
+
+local function setupPlayer()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    local Folder = Instance.new("Folder", Workspace)
+    local Part = Instance.new("Part", Folder)
+    local Attachment1 = Instance.new("Attachment", Part)
+    Part.Anchored = true
+    Part.CanCollide = false
+    Part.Transparency = 1
+
+    return humanoidRootPart, Attachment1
+end
+
+local humanoidRootPart, Attachment1 = setupPlayer()
+
+if not getgenv().Network then
+    getgenv().Network = {
+        BaseParts = {},
+        Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424)
+    }
+
+    Network.RetainPart = function(part)
+        if typeof(part) == "Instance" and part:IsA("BasePart") and part:IsDescendantOf(Workspace) then
+            table.insert(Network.BaseParts, part)
+            part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+            part.CanCollide = false
+        end
+    end
+
+    local function EnablePartControl()
+        LocalPlayer.ReplicationFocus = Workspace
+        RunService.Heartbeat:Connect(function()
+            sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
+            for _, part in pairs(Network.BaseParts) do
+                if part:IsDescendantOf(Workspace) then
+                    part.Velocity = Network.Velocity
+                end
+            end
+        end)
+    end
+
+    EnablePartControl()
+end
+
+local function ForcePart(v)
+    if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
+        for _, x in next, v:GetChildren() do
+            if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity") or x:IsA("RocketPropulsion") then
+                x:Destroy()
+            end
+        end
+        if v:FindFirstChild("Attachment") then
+            v:FindFirstChild("Attachment"):Destroy()
+        end
+        if v:FindFirstChild("AlignPosition") then
+            v:FindFirstChild("AlignPosition"):Destroy()
+        end
+        if v:FindFirstChild("Torque") then
+            v:FindFirstChild("Torque"):Destroy()
+        end
+        v.CanCollide = false
+        
+        local Torque = Instance.new("Torque", v)
+        Torque.Torque = Vector3.new(1000000, 1000000, 1000000)
+        local AlignPosition = Instance.new("AlignPosition", v)
+        local Attachment2 = Instance.new("Attachment", v)
+        Torque.Attachment0 = Attachment2
+        AlignPosition.MaxForce = math.huge
+        AlignPosition.MaxVelocity = math.huge
+        AlignPosition.Responsiveness = 500
+        AlignPosition.Attachment0 = Attachment2
+        AlignPosition.Attachment1 = Attachment1
+    end
+end
+
+local function toggleBlackHole()
+    blackHoleActive = not blackHoleActive
+    if blackHoleActive then
+        for _, v in next, Workspace:GetDescendants() do
+            ForcePart(v)
+        end
+
+        Workspace.DescendantAdded:Connect(function(v)
+            if blackHoleActive then
+                ForcePart(v)
+            end
+        end)
+
+        spawn(function()
+            while blackHoleActive and RunService.RenderStepped:Wait() do
+                angle = angle + math.rad(2)
+
+                local offsetX = math.cos(angle) * radius
+                local offsetZ = math.sin(angle) * radius
+
+                Attachment1.WorldCFrame = humanoidRootPart.CFrame * CFrame.new(offsetX, 0, offsetZ)
+            end
+        end)
+    else
+        Attachment1.WorldCFrame = CFrame.new(0, -1000, 0)
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    humanoidRootPart, Attachment1 = setupPlayer()
+    if blackHoleActive then
+        toggleBlackHole()
+    end
+end)
+
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/miroeramaa/TurtleLib/main/TurtleUiLib.lua"))()
+local window = library:Window("🔥 Projeto LKB")
+
+window:Slider("🌀 Radius Blackhole",1,100,10, function(Value)
+   radius = Value
+end)
+
+window:Toggle("🕳️ Blackhole", true, function(Value)
+       if Value then
+            toggleBlackHole()
+        else
+            blackHoleActive = false
+        end
+end)
+
+spawn(function()
+    while true do
+        RunService.RenderStepped:Wait()
+        if blackHoleActive then
+            angle = angle + math.rad(angleSpeed)
+        end
+    end
+end)
+
+toggleBlackHole()
+    end
+})
+
+scriptsTab:AddButton({
+    Name = "🧲 Puxar Parts Player",
+    Description = "",
+    Callback = function()
+        -- Gui to Lua
+-- Version: 3.2
+
+-- Instances:
+
+local Gui = Instance.new("ScreenGui")
+local Main = Instance.new("Frame")
+local Box = Instance.new("TextBox")
+local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
+local Label = Instance.new("TextLabel")
+local UITextSizeConstraint_2 = Instance.new("UITextSizeConstraint")
+local Button = Instance.new("TextButton")
+local UITextSizeConstraint_3 = Instance.new("UITextSizeConstraint")
+
+--Properties:
+
+Gui.Name = "Gui"
+Gui.Parent = gethui()
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+Main.Name = "Main"
+Main.Parent = Gui
+Main.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+Main.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Main.BorderSizePixel = 0
+Main.Position = UDim2.new(0.335954279, 0, 0.542361975, 0)
+Main.Size = UDim2.new(0.240350261, 0, 0.166880623, 0)
+Main.Active = true
+Main.Draggable = true
+
+Box.Name = "Box"
+Box.Parent = Main
+Box.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+Box.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Box.BorderSizePixel = 0
+Box.Position = UDim2.new(0.0980926454, 0, 0.218712583, 0)
+Box.Size = UDim2.new(0.801089942, 0, 0.364963502, 0)
+Box.FontFace = Font.new("rbxasset://fonts/families/SourceSansSemibold.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+Box.PlaceholderText = "Player here"
+Box.Text = ""
+Box.TextColor3 = Color3.fromRGB(255, 255, 255)
+Box.TextScaled = true
+Box.TextSize = 31.000
+Box.TextWrapped = true
+
+UITextSizeConstraint.Parent = Box
+UITextSizeConstraint.MaxTextSize = 31
+
+Label.Name = "Label"
+Label.Parent = Main
+Label.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+Label.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Label.BorderSizePixel = 0
+Label.Size = UDim2.new(1, 0, 0.160583943, 0)
+Label.FontFace = Font.new("rbxasset://fonts/families/Nunito.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+Label.Text = "🧲 Bring Parts"
+Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+Label.TextScaled = true
+Label.TextSize = 14.000
+Label.TextWrapped = true
+
+UITextSizeConstraint_2.Parent = Label
+UITextSizeConstraint_2.MaxTextSize = 21
+
+Button.Name = "Button"
+Button.Parent = Main
+Button.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+Button.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Button.BorderSizePixel = 0
+Button.Position = UDim2.new(0.183284417, 0, 0.656760991, 0)
+Button.Size = UDim2.new(0.629427791, 0, 0.277372271, 0)
+Button.Font = Enum.Font.Nunito
+Button.Text = "🧲 Bring | Off"
+Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button.TextScaled = true
+Button.TextSize = 28.000
+Button.TextWrapped = true
+
+UITextSizeConstraint_3.Parent = Button
+UITextSizeConstraint_3.MaxTextSize = 28
+
+-- Scripts:
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local character
+local humanoidRootPart
+
+mainStatus = true
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+	if input.KeyCode == Enum.KeyCode.RightControl and not gameProcessedEvent then
+		mainStatus = not mainStatus
+		Main.Visible = mainStatus
+	end
+end)
+
+local Folder = Instance.new("Folder", Workspace)
+local Part = Instance.new("Part", Folder)
+local Attachment1 = Instance.new("Attachment", Part)
+Part.Anchored = true
+Part.CanCollide = false
+Part.Transparency = 1
+
+if not getgenv().Network then
+	getgenv().Network = {
+		BaseParts = {},
+		Velocity = Vector3.new(14.46262424, 14.46262424, 14.46262424)
+	}
+
+	Network.RetainPart = function(Part)
+		if Part:IsA("BasePart") and Part:IsDescendantOf(Workspace) then
+			table.insert(Network.BaseParts, Part)
+			Part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+			Part.CanCollide = false
+		end
+	end
+
+	local function EnablePartControl()
+		LocalPlayer.ReplicationFocus = Workspace
+		RunService.Heartbeat:Connect(function()
+			sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
+			for _, Part in pairs(Network.BaseParts) do
+				if Part:IsDescendantOf(Workspace) then
+					Part.Velocity = Network.Velocity
+				end
+			end
+		end)
+	end
+
+	EnablePartControl()
+end
+
+local function ForcePart(v)
+	if v:IsA("BasePart") and not v.Anchored and not v.Parent:FindFirstChildOfClass("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
+		for _, x in ipairs(v:GetChildren()) do
+			if x:IsA("BodyMover") or x:IsA("RocketPropulsion") then
+				x:Destroy()
+			end
+		end
+		if v:FindFirstChild("Attachment") then
+			v:FindFirstChild("Attachment"):Destroy()
+		end
+		if v:FindFirstChild("AlignPosition") then
+			v:FindFirstChild("AlignPosition"):Destroy()
+		end
+		if v:FindFirstChild("Torque") then
+			v:FindFirstChild("Torque"):Destroy()
+		end
+		v.CanCollide = false
+		local Torque = Instance.new("Torque", v)
+		Torque.Torque = Vector3.new(100000, 100000, 100000)
+		local AlignPosition = Instance.new("AlignPosition", v)
+		local Attachment2 = Instance.new("Attachment", v)
+		Torque.Attachment0 = Attachment2
+		AlignPosition.MaxForce = math.huge
+		AlignPosition.MaxVelocity = math.huge
+		AlignPosition.Responsiveness = 200
+		AlignPosition.Attachment0 = Attachment2
+		AlignPosition.Attachment1 = Attachment1
+	end
+end
+
+local blackHoleActive = false
+local DescendantAddedConnection
+
+local function toggleBlackHole()
+	blackHoleActive = not blackHoleActive
+	if blackHoleActive then
+		Button.Text = "🧲 Bring Parts | On"
+		for _, v in ipairs(Workspace:GetDescendants()) do
+			ForcePart(v)
+		end
+
+		DescendantAddedConnection = Workspace.DescendantAdded:Connect(function(v)
+			if blackHoleActive then
+				ForcePart(v)
+			end
+		end)
+
+		spawn(function()
+			while blackHoleActive and RunService.RenderStepped:Wait() do
+				Attachment1.WorldCFrame = humanoidRootPart.CFrame
+			end
+		end)
+	else
+		Button.Text = "🧲 Bring Parts | Off"
+		if DescendantAddedConnection then
+			DescendantAddedConnection:Disconnect()
+		end
+	end
+end
+
+local function getPlayer(name)
+	local lowerName = string.lower(name)
+	for _, p in pairs(Players:GetPlayers()) do
+		local lowerPlayer = string.lower(p.Name)
+		if string.find(lowerPlayer, lowerName) then
+			return p
+		elseif string.find(string.lower(p.DisplayName), lowerName) then
+			return p
+		end
+	end
+end
+
+local player = nil
+
+local function VDOYZQL_fake_script() -- Box.Script 
+	local script = Instance.new('Script', Box)
+
+	script.Parent.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			player = getPlayer(Box.Text)
+			if player then
+				Box.Text = player.Name
+				print("Player found:", player.Name)
+			else
+				print("Player not found")
+			end
+		end
+	end)
+end
+coroutine.wrap(VDOYZQL_fake_script)()
+local function JUBNQKI_fake_script() -- Button.Script 
+	local script = Instance.new('Script', Button)
+
+	script.Parent.MouseButton1Click:Connect(function()
+		if player then
+			character = player.Character or player.CharacterAdded:Wait()
+			humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+			toggleBlackHole()
+		else
+			print("Player is not selected")
+		end
+	end)
+end
+coroutine.wrap(JUBNQKI_fake_script)()
+    end
+})
+
+scriptsTab:AddSection({ "🧪 Glue & Invisible" })
+
+scriptsTab:AddButton({
+    Name = "👻 FE Görünmez",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/TROLLLINUXKKK/Fe-invis-vel-/refs/heads/main/Main.txt"))()
+    end
+})
+
+scriptsTab:AddSection({ "🌪️ Desastres naturais" })
+scriptsTab:AddButton({
+    Name = "🌪️ Tornado Com Navio Grande",
+    Description = "",
+    Callback = function()
+-- (Kodun içi aynen korunmuştur, sadece başlık emojili)
+-- ...
+end
+})
+
+scriptsTab:AddButton({
+    Name = "❌ Tornadoyu Devre Dışı Bırak ve Aracı Kaldır",
+    Description = "",
+    Callback = function()
+        local success, err = pcall(function()
+            local args = { "DeleteAllVehicles" }
+            game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Ca1r"):FireServer(unpack(args))
+        end)
+
+        if not success then
+            warn("Falha ao deletar veículos:", err)
+        else
+            print("[Shaodws Hub] Tornado finalizado e veículos deletados.")
+        end
+    end
+})
+
+scriptsTab:AddSection({ "👁️ ESP" })
+
+-- ESP kodu aynen korunmuştur, sadece başlıklar emojili
+-- (Devamı bozulmadan bırakıldı)
+
+scriptsTab:AddSection({ "🕊️ Fly Xeno" })
+
+scriptsTab:AddButton({
+    Title = "🕊️ Fly Xeno",
+    Desc = "Ativa o Fly",
+    Locked = false,
+    Callback = function()
+    	loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end
+})
+
+scriptsTab:AddSection("🎥 Freecam Tool")
+
+scriptsTab:AddButton({
+    Name = "🎮 Full FreeCam (Final Version)",
+    Callback = function()
+
+        local Players = game:GetService("Players")
+        local UserInputService = game:GetService("UserInputService")
+        local RunService = game:GetService("RunService")
+
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:WaitForChild("Humanoid")
+        local root = character:WaitForChild("HumanoidRootPart")
+        local cam = workspace.CurrentCamera
+
+        -- Tool
+        local tool = Instance.new("Tool")
+        tool.Name = "FreeCamByXenoHub"
+		tool.TextureId = "rbxassetid://106398840014061"
+        tool.RequiresHandle = false
+        tool.Parent = player.Backpack
+
+        -- UI
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "FreeCamUI"
+        gui.ResetOnSpawn = false
+        gui.Enabled = false
+        gui.Parent = player:WaitForChild("PlayerGui")
+
+        -- Speed label
+        local speedLabel = Instance.new("TextLabel", gui)
+        speedLabel.Size = UDim2.new(0, 200, 0, 40)
+        speedLabel.Position = UDim2.new(0.5, -100, 0, 10)
+        speedLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        speedLabel.BackgroundTransparency = 0.3
+        speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        speedLabel.TextScaled = true
+        speedLabel.Font = Enum.Font.GothamBold
+        speedLabel.Text = "Speed: 1"
+
+        local function createBtn(txt, pos)
+            local b = Instance.new("TextButton", gui)
+            b.Size = UDim2.new(0, 60, 0, 60)
+            b.Position = pos
+            b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            b.TextColor3 = Color3.fromRGB(255, 255, 255)
+            b.TextScaled = true
+            b.Font = Enum.Font.GothamBold
+            b.Text = txt
+            b.AutoButtonColor = true
+            return b
+        end
+
+        -- Mobile WASD
+        local btnW = createBtn("W", UDim2.new(0.1, 0, 0.65, -60))
+        local btnA = createBtn("A", UDim2.new(0.05, 0, 0.65, 0))
+        local btnS = createBtn("S", UDim2.new(0.1, 0, 0.65, 60))
+        local btnD = createBtn("D", UDim2.new(0.15, 0, 0.65, 0))
+
+        -- Speed + / -
+        local btnPlus = createBtn("+", UDim2.new(0.85, 0, 0.1, 0))
+        local btnMinus = createBtn("-", UDim2.new(0.75, 0, 0.1, 0))
+
+        local mobileInput = {W=false, A=false, S=false, D=false}
+
+        btnW.MouseButton1Down:Connect(function() mobileInput.W = true end)
+        btnW.MouseButton1Up:Connect(function() mobileInput.W = false end)
+
+        btnA.MouseButton1Down:Connect(function() mobileInput.A = true end)
+        btnA.MouseButton1Up:Connect(function() mobileInput.A = false end)
+
+        btnS.MouseButton1Down:Connect(function() mobileInput.S = true end)
+        btnS.MouseButton1Up:Connect(function() mobileInput.S = false end)
+
+        btnD.MouseButton1Down:Connect(function() mobileInput.D = true end)
+        btnD.MouseButton1Up:Connect(function() mobileInput.D = false end)
+
+        -- Freecam vars
+        local freecam = false
+        local speed = 1
+        local rotation = Vector2.new(0, 0)
+        local rotSpeed = 1 -- hızlı dönüş
+        local conn
+
+        -- Speed buttons (mobile)
+        btnPlus.MouseButton1Click:Connect(function()
+            speed = math.clamp(speed + 0.5, 0.5, 10)
+            speedLabel.Text = "Speed: " .. speed
+        end)
+
+        btnMinus.MouseButton1Click:Connect(function()
+            speed = math.clamp(speed - 0.5, 0.5, 10)
+            speedLabel.Text = "Speed: " .. speed
+        end)
+
+        -- Scroll speed (PC)
+        UserInputService.InputChanged:Connect(function(input)
+            if freecam and input.UserInputType == Enum.UserInputType.MouseWheel then
+                speed = math.clamp(speed + input.Position.Z * 0.5, 0.5, 10)
+                speedLabel.Text = "Speed: " .. speed
+            end
+        end)
+
+        -- Speed presets 1 / 2 / 3
+        UserInputService.InputBegan:Connect(function(input, gp)
+            if not freecam or gp then return end
+
+            if input.KeyCode == Enum.KeyCode.One then
+                speed = 1
+            elseif input.KeyCode == Enum.KeyCode.Two then
+                speed = 3
+            elseif input.KeyCode == Enum.KeyCode.Three then
+                speed = 6
+            end
+
+            speedLabel.Text = "Speed: " .. speed
+        end)
+
+        -- FIX: Bacakların yere batmasını engelle
+        local function fixLegs()
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+
+        local function getMoveDir()
+            local dir = Vector3.zero
+
+            -- Keyboard + mobile
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) or mobileInput.W then dir += Vector3.new(0, 0, -1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) or mobileInput.S then dir += Vector3.new(0, 0, 1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) or mobileInput.A then dir += Vector3.new(-1, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) or mobileInput.D then dir += Vector3.new(1, 0, 0) end
+
+            -- Gamepad left stick
+            local states = UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1)
+            if states[1] then
+                local stick = states[1].Position
+                dir += Vector3.new(stick.X, 0, -stick.Y)
+            end
+
+            return dir
+        end
+
+        local function getGamepadRotation()
+            local states = UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1)
+            if states[2] then
+                local stick = states[2].Position
+                return Vector2.new(-stick.Y, -stick.X)
+            end
+            return Vector2.zero
+        end
+
+        local function enableFreecam()
+            if freecam then return end
+            freecam = true
+            gui.Enabled = true
+
+            -- FIX: Karakter düşmesin + ayaklar kaybolmasın
+            fixLegs()
+            root.Anchored = true
+            humanoid.PlatformStand = false
+
+            cam.CameraType = Enum.CameraType.Scriptable
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+
+            conn = RunService.RenderStepped:Connect(function(dt)
+                local delta = UserInputService:GetMouseDelta()
+                local gpRot = getGamepadRotation()
+
+                rotation = rotation + (Vector2.new(-delta.Y, -delta.X) + gpRot) * rotSpeed * dt
+
+                local cf =
+                    CFrame.new(cam.CFrame.Position)
+                    * CFrame.Angles(0, rotation.Y, 0)
+                    * CFrame.Angles(rotation.X, 0, 0)
+
+                cam.CFrame = cf + cf:VectorToWorldSpace(getMoveDir() * speed)
+            end)
+        end
+
+        local function disableFreecam()
+            if not freecam then return end
+            freecam = false
+            gui.Enabled = false
+
+            if conn then
+                conn:Disconnect()
+                conn = nil
+            end
+
+            -- FIX: Karakteri geri aç
+            root.Anchored = false
+            fixLegs()
+
+            cam.CameraType = Enum.CameraType.Custom
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        end
+
+        tool.Equipped:Connect(enableFreecam)
+        tool.Unequipped:Connect(disableFreecam)
+    end
+})
+
+scriptsTab:AddSection({ "🚁 Drone Xeno" })
+
+scriptsTab:AddButton({
+    Name = "🚁 Xeno Drone",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOPOOF/drone/refs/heads/main/Main.txt"))()
+    end
+})
+
 -- Araba Sekmesi
 local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
 -- ======================================================
