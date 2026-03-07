@@ -2705,7 +2705,7 @@ scriptsTab:AddSection({ "🚁 Drone Xeno" })
 scriptsTab:AddButton({
     Name = "🚁 Xeno Drone",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOPOOF/drone/refs/heads/main/Main.txt"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EgeKazak1/Xeno-Hub-Drone/main/main"))()"))()
     end
 })
 
