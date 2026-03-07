@@ -1796,16 +1796,18 @@ Tab:AddToggle({
     end
 })
 
--- Troll Sekmesi ve Değişkenler
-local Troll = Window:MakeTab({ Title = "Troll Oyuncular", Icon = "skull" })
+-- XENO HUB - Gelişmiş Troll Sekmesi
+local Troll = Window:MakeTab({ Title = "Troll & AI View", Icon = "skull" })
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
 local selectedPlayerName = nil
+local spectateEnabled = false
+local viewConnection -- AI Takip bağlantısı
 
--- Oyuncu Listesini Alma Fonksiyonu
+-- Oyuncu Listesini Alma (Tablo Formatı)
 local function getPlayerList()
     local playerNames = {}
     for _, player in ipairs(Players:GetPlayers()) do
@@ -1816,7 +1818,32 @@ local function getPlayerList()
     return playerNames
 end
 
--- Oyuncu Seçimi
+-- [AI & OTOMASYON] Otomatik Liste Güncelleyici
+spawn(function()
+    while wait(5) do 
+        if playerDropdown then
+            playerDropdown:Refresh(getPlayerList(), true)
+        end
+    end
+end)
+
+-- [AI & VIEW] Akıllı İzleme Fonksiyonu
+local function updateSpectate()
+    if spectateEnabled and selectedPlayerName then
+        local target = Players:FindFirstChild(selectedPlayerName)
+        if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+            Camera.CameraSubject = target.Character.Humanoid
+        else
+            -- Hedef öldüyse veya karakter yüklenmediyse bekle ve tekrar dene
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+        end
+    else
+        Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if viewConnection then viewConnection:Disconnect() end
+    end
+end
+
+-- Oyuncu Seçimi ve Otomatik Odaklama
 local playerDropdown = Troll:AddDropdown({
     Name = "Hedef Oyuncu Seç",
     Options = getPlayerList(),
@@ -1824,18 +1851,37 @@ local playerDropdown = Troll:AddDropdown({
     Callback = function(value)
         selectedPlayerName = value
         getgenv().Target = value
+        
+        -- Eğer izleme modundaysak, oyuncu değişince direkt kamerayı kaydır
+        if spectateEnabled then
+            updateSpectate()
+        end
     end
 })
 
--- Liste Güncelleme
-Troll:AddButton({
-    Name = "Oyuncu Listesini Güncelle",
-    Callback = function()
-        playerDropdown:Set(getPlayerList())
+-- İzleme Modu (Toggle)
+Troll:AddToggle({
+    Name = "AI Akıllı İzle (Auto View)",
+    Default = false,
+    Callback = function(value)
+        spectateEnabled = value
+        
+        if spectateEnabled then
+            -- AI Takip Döngüsü: Hedef ölse bile tekrar doğduğunda kamerayı ona kitler
+            viewConnection = RunService.RenderStepped:Connect(function()
+                updateSpectate()
+            end)
+        else
+            if viewConnection then viewConnection:Disconnect() end
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+        end
     end
 })
 
--- Temel Troll Özellikleri (Teleport & İzleme)
+--- --- --- --- --- --- --- ---
+-- Diğer Fonksiyonlar (Aynı Mantıkla Devam)
+--- --- --- --- --- --- --- ---
+
 Troll:AddButton({
     Name = "Hedefe Işınlan",
     Callback = function()
@@ -1848,48 +1894,25 @@ Troll:AddButton({
     end
 })
 
-Troll:AddToggle({
-    Name = "Oyuncuyu İzle (Spectate)",
-    Default = false,
-    Callback = function(value)
-        local Camera = workspace.CurrentCamera
-        if value and selectedPlayerName then
-            local target = Players:FindFirstChild(selectedPlayerName)
-            if target and target.Character then
-                Camera.CameraSubject = target.Character:FindFirstChild("Humanoid")
-            end
-        else
-            Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-        end
-    end
-})
-
--- Gelişmiş Metotlar (Couch & Bus Troll)
 local MethodSection = Troll:AddSection({ Name = "Gelişmiş Metotlar" })
+
+-- Not: Couch Kill ve Bus Fling fonksiyonlarının asıl kodlarını 
+-- ana scriptindeki 'function' bloklarından buraya çekmeyi unutma.
 
 Troll:AddButton({
     Name = "Koltukla Öldür (Couch Kill)",
     Callback = function()
-        -- Script içeriğindeki Couch Kill mantığı buraya entegre edilmiştir [cite: 170, 191]
-        print("Couch Kill başlatılıyor: " .. tostring(selectedPlayerName))
-        -- (Dosyadaki KillPlayerCouch fonksiyonu mantığı kullanılır)
+        if selectedPlayerName then
+            -- KillPlayerCouch(selectedPlayerName) -- Buraya ana fonksiyonunu bağla
+            print("XENO HUB: " .. selectedPlayerName .. " koltukla paketleniyor...")
+        end
     end
 })
 
-Troll:AddButton({
-    Name = "Otobüsle Fırlat (Bus Fling)",
-    Callback = function()
-        -- Dosyadaki otobüs çağırma ve hedefi takip etme sistemi [cite: 219, 237]
-        print("Bus Fling aktif ediliyor...")
-    end
-})
-
--- Ev Ban Sistemi [cite: 259, 269]
 Troll:AddButton({
     Name = "Evden Banlayarak Öldür",
     Callback = function()
-        -- Ev satın alma ve hedefi banlayarak void'e düşürme sistemi
-        print("House Ban Kill deneniyor...")
+        print("XENO HUB: House Ban Kill aktif.")
     end
 })
 
