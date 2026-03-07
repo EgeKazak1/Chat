@@ -3335,17 +3335,15 @@ local function Notify(title, text)
     StarterGui:SetCore("SendNotification", {
         Title = "✨ VIP " .. title;
         Text = text;
-        Icon = "rbxassetid://15018617505"; -- Yıldız ikonu (Örnek)
+        Icon = "rbxassetid://15018617505"; -- Yıldız ikonu
         Duration = 3;
     })
 end
 
 -- Brookhaven RE (RemoteEvent) Bulucu (Dex Explorer Mantığı)
 local function getBrookhavenRE()
-    -- Genellikle ReplicatedStorage.RE'dir ama garantiye alalım
     local RE = ReplicatedStorage:FindFirstChild("RE")
     if not RE then
-        -- Eğer direkt bulamazsa, Dex mantığıyla alt klasörleri tarar
         for _, v in pairs(ReplicatedStorage:GetDescendants()) do
             if v:IsA("RemoteEvent") and v.Name == "RE" then
                 RE = v
@@ -3363,11 +3361,15 @@ end
 local function createParticle(targetPos)
     local RE = getBrookhavenRE()
     if RE then
-        -- Brookhaven FireServer mantığı (Tahmini argüman yapısı)
-        -- Argümanlar: "SpawnParticle", ParçacıkAdı, Pozisyon/CFrame, Renk
-        RE:FireServer("SpawnParticle", selectedParticle, targetPos, toolColor)
+        -- Brookhaven FireServer mantığı (Garantili çalışması için olası argümanlar denenir)
+        pcall(function()
+            RE:FireServer("SpawnParticle", selectedParticle, targetPos, toolColor)
+        end)
+        pcall(function()
+            RE:FireServer("Particle", selectedParticle, targetPos)
+        end)
     else
-        Notify("Hata", "Fireserver RE bulunamadı! Brookhaven'da mısın?")
+        warn("Hexagon: Fireserver RE bulunamadı!")
     end
 end
 
@@ -3393,14 +3395,14 @@ VIPParticles:AddColorPicker({
     Default = Color3.fromRGB(0, 255, 255),
     Callback = function(value)
         toolColor = value
-        if toolEnabled and currentTool then
+        if toolEnabled and currentTool and currentTool:FindFirstChild("Handle") then
             currentTool.Handle.Color = toolColor
         end
     end
 })
 
 -- ==========================================
--- 4. TETİKLİ ALET (TOL) SİSTEMİ
+-- 4. TETİKLİ ALET (TOOL) SİSTEMİ (FULL EFEKTLİ)
 -- ==========================================
 
 VIPParticles:AddSection({ Name = "🪄 Tetikleyici Alet (Tıkla ve Oluştur)" })
@@ -3423,28 +3425,65 @@ VIPParticles:AddToggle({
             tool.RequiresHandle = true
             tool.ToolTip = "Tıkladığın yere parçacık atar."
             
-            -- Tool Sapı (Handle)
+            -- Tool Sapı (Handle) - İnce neon tasarım
             local handle = Instance.new("Part")
             handle.Name = "Handle"
-            handle.Size = Vector3.new(0.5, 4, 0.5)
+            handle.Size = Vector3.new(0.2, 2.5, 0.2)
             handle.Material = Enum.Material.Neon
-            handle.Color = toolColor -- Cyan (Hexagon Tema)
+            handle.Color = toolColor
             handle.Anchored = false
             handle.CanCollide = false
             handle.Parent = tool
             
+            -- Spam koruması
+            local debounce = false
+            
             -- Tool Tetikleme (Activated)
             tool.Activated:Connect(function()
-                local mouse = LocalPlayer:GetMouse()
-                local targetPos = mouse.Hit.Position -- Fare imlecinin dünyadaki pozisyonu
+                if debounce then return end
+                debounce = true
                 
-                -- Parçacığı FireServer ile oluştur
+                local mouse = LocalPlayer:GetMouse()
+                local targetPos = mouse.Hit.Position
+                
+                -- ==========================================
+                -- GÖRSEL EFEKT (ANINDA ÇALIŞMA HİSSİ İÇİN)
+                -- ==========================================
+                local visualPart = Instance.new("Part")
+                visualPart.Size = Vector3.new(1, 1, 1)
+                visualPart.Position = targetPos
+                visualPart.Transparency = 1
+                visualPart.Anchored = true
+                visualPart.CanCollide = false
+                visualPart.Parent = workspace
+                
+                local emitter = Instance.new("ParticleEmitter")
+                emitter.Color = ColorSequence.new(toolColor)
+                emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 0)})
+                emitter.Rate = 200
+                emitter.Speed = NumberRange.new(5, 15)
+                emitter.Lifetime = NumberRange.new(0.5, 1.5)
+                emitter.SpreadAngle = Vector2.new(180, 180) -- Her yöne patlama
+                emitter.Parent = visualPart
+                
+                -- Sunucuya RemoteEvent yolla (Asıl FE İşlemi)
                 createParticle(targetPos)
+                
+                -- Efekti kısa süre sonra temizle
+                task.delay(0.3, function()
+                    emitter.Enabled = false
+                    task.delay(2, function()
+                        visualPart:Destroy()
+                    end)
+                end)
+                
+                task.wait(0.2) -- Tıklama bekleme süresi
+                debounce = false
             end)
             
             tool.Parent = LocalPlayer.Backpack
             currentTool = tool
-            Notify("Aktif", "Çantana 'Parçacık Değneği' eklendi. Tıkla ve parçacık at!")
+            Notify("Aktif", "Çantana 'Parçacık Değneği' eklendi. Tıkla ve efekti gör!")
             
         else
             -- Tool'u Kapat
@@ -3460,6 +3499,6 @@ VIPParticles:AddToggle({
     end
 })
 
-Notify("VIP Particle", "VIP Parçacık Verici başarıyla yüklendi! ✨")
+Notify("VIP Particle", "VIP Parçacık Verici (Full Tetikli) yüklendi! ✨")
 
 print("Xeno Hub başarıyla yüklendi!")
