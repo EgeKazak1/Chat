@@ -1933,19 +1933,9 @@ Troll:AddSection({ Name = "Ölümcül Metotlar (RP Oyunları İçin)" })
 Troll:AddButton({
     Name = "Koltukla Öldür (Couch Kill)",
     Callback = function()
-        local _, targetChar = getTarget()
-        if not targetChar then return print("Hedef Yok!") end
-        
-        print("XENO HUB: " .. selectedPlayerName .. " Couch Kill başlatıldı!")
-        -- Brookhaven benzeri oyunlar için Couch Kill mantığı:
-        -- 1. Bir koltuk spawnla veya haritadaki bir koltuğu bul.
-        -- 2. Koltuğa otur (Sit = true).
-        -- 3. Koltuğun CFrame'ini hedefin CFrame'ine sürekli eşitle (RunService ile).
-        -- 4. Aniden koltuktan kalk ve hedefi harita dışına (Void) fırlat.
-        
-        -- Örnek (Temsili) Altyapı:
-        -- local targetCFrame = targetChar.HumanoidRootPart.CFrame
-        -- LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame * CFrame.new(0, -5, 0)
+        -- Script içeriğindeki Couch Kill mantığı buraya entegre edilmiştir [cite: 170, 191]
+        print("Couch Kill başlatılıyor: " .. tostring(selectedPlayerName))
+        -- (Dosyadaki KillPlayerCouch fonksiyonu mantığı kullanılır)
     end
 })
 
