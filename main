@@ -1843,7 +1843,7 @@ end
 -- 2. ARAYÜZ (UI) BİLEŞENLERİ
 -- ==========================================
 
-Troll:AddSection({ Name = "Hedef Seçimi & AI İzleme" })
+Troll:AddSection({ Name = "Hedef Seçimi" })
 
 -- Oyuncu Seçimi ve Otomatik Odaklama
 local playerDropdown = Troll:AddDropdown({
@@ -1880,7 +1880,7 @@ end)
 
 -- İzleme Modu (AI Auto View)
 Troll:AddToggle({
-    Name = "AI Akıllı İzle (Auto View)",
+    Name = "View",
     Default = false,
     Callback = function(value)
         spectateEnabled = value
