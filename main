@@ -1796,7 +1796,7 @@ Tab:AddToggle({
     end
 })
 
---- XENO HUB - Gelişmiş Troll & AI View Sekmesi
+-- XENO HUB - Gelişmiş Troll & AI View Sekmesi
 -- Yapımcı: Ege (XENO HUB)
 -- Özellikler: Brookhaven RP (RE Remotes), Dex Explorer Mantığı, AI View, Tetikli Alet
 
@@ -1864,11 +1864,11 @@ local TrollMethods = {}
 
 TrollMethods.CouchKill = function(targetName)
     local targetPlayer, targetChar = getTarget(targetName)
-    if not targetChar then return Notify("Hata", "Hedef bulunamadı!") end
+    if not targetChar then return Notify("❌ Hata", "Hedef bulunamadı!") end
     
     local RE = getBrookhavenRE()
     if RE then
-        Notify("Couch Kill", targetName .. " koltukla void'e yollanıyor...")
+        Notify("🛋️ Couch Kill", targetName .. " koltukla void'e yollanıyor...")
         -- Brookhaven Prop Spawn Remote
         RE:FireServer("SpawnProp", "Couch")
         
@@ -1888,17 +1888,17 @@ TrollMethods.CouchKill = function(targetName)
             end
         end)
     else
-        Notify("Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
+        Notify("⚠️ Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
     end
 end
 
 TrollMethods.BusFling = function(targetName)
     local targetPlayer, targetChar = getTarget(targetName)
-    if not targetChar then return Notify("Hata", "Hedef bulunamadı!") end
+    if not targetChar then return Notify("❌ Hata", "Hedef bulunamadı!") end
     
     local RE = getBrookhavenRE()
     if RE then
-        Notify("Bus Fling", targetName .. " otobüsle eziliyor...")
+        Notify("🚌 Bus Fling", targetName .. " otobüsle eziliyor...")
         RE:FireServer("SpawnVehicle", "SchoolBus")
         
         task.delay(1, function()
@@ -1926,22 +1926,22 @@ TrollMethods.BusFling = function(targetName)
             end
         end)
     else
-        Notify("Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
+        Notify("⚠️ Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
     end
 end
 
 TrollMethods.HouseBan = function(targetName)
     local targetPlayer, targetChar = getTarget(targetName)
-    if not targetChar then return Notify("Hata", "Hedef bulunamadı!") end
+    if not targetChar then return Notify("❌ Hata", "Hedef bulunamadı!") end
     
     local RE = getBrookhavenRE()
     if RE then
-        Notify("House Ban Kill", targetName .. " evden banlanıyor...")
+        Notify("🏠 House Ban Kill", targetName .. " evden banlanıyor...")
         -- Ev banlama eventi tetiklenir (Hedef buga girer)
         RE:FireServer("HouseBan", targetPlayer)
         RE:FireServer("HouseUnban", targetPlayer) -- Bug'da kalması için anında unban/ban döngüsü
     else
-        Notify("Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
+        Notify("⚠️ Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
     end
 end
 
@@ -1959,10 +1959,10 @@ local function getPlayerList()
     return playerNames
 end
 
-Troll:AddSection({ Name = "Hedef Seçimi & AI İzleme" })
+Troll:AddSection({ Name = "🎯 Hedef Seçimi & 👁️ AI İzleme" })
 
 local playerDropdown = Troll:AddDropdown({
-    Name = "Hedef Oyuncu Seç",
+    Name = "👤 Hedef Oyuncu Seç",
     Options = getPlayerList(),
     Default = "",
     Callback = function(value)
@@ -1972,8 +1972,18 @@ local playerDropdown = Troll:AddDropdown({
             local _, targetChar = getTarget()
             if targetChar and targetChar:FindFirstChild("Humanoid") then
                 Camera.CameraSubject = targetChar.Humanoid
-                Notify("AI View", value .. " izleniyor.")
+                Notify("👁️ AI View", value .. " izleniyor.")
             end
+        end
+    end
+})
+
+Troll:AddButton({
+    Name = "🔄 Listeyi Manuel Yenile",
+    Callback = function()
+        if playerDropdown then
+            playerDropdown:Refresh(getPlayerList(), true)
+            Notify("✅ Yenilendi", "Oyuncu listesi başarıyla güncellendi.")
         end
     end
 })
@@ -1985,7 +1995,7 @@ spawn(function()
             if selectedPlayerName and not Players:FindFirstChild(selectedPlayerName) then
                 selectedPlayerName = nil
                 getgenv().Target = nil
-                Notify("Bilgi", "Seçili hedef oyundan çıktı.")
+                Notify("ℹ️ Bilgi", "Seçili hedef oyundan çıktı.")
             end
             playerDropdown:Refresh(getPlayerList(), true)
         end
@@ -1993,7 +2003,7 @@ spawn(function()
 end)
 
 Troll:AddToggle({
-    Name = "AI Akıllı İzle (Auto View)",
+    Name = "👁️ AI Akıllı İzle (Spectate)",
     Default = false,
     Callback = function(value)
         spectateEnabled = value
@@ -2018,12 +2028,12 @@ Troll:AddToggle({
 })
 
 Troll:AddButton({
-    Name = "Hedefe Işınlan (Teleport)",
+    Name = "⚡ Hedefe Işınlan (Teleport)",
     Callback = function()
         local _, targetChar = getTarget()
         if targetChar and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             LocalPlayer.Character.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-            Notify("Işınlanma", selectedPlayerName .. " yanına gidildi.")
+            Notify("🚀 Işınlanma", selectedPlayerName .. " yanına gidildi.")
         end
     end
 })
@@ -2032,10 +2042,10 @@ Troll:AddButton({
 -- 4. TETİKLİ ALET (SUİKAST SİLAHI)
 -- ==========================================
 
-Troll:AddSection({ Name = "Tetikli Alet (Suikast Değneği)" })
+Troll:AddSection({ Name = "🪄 Tetikli Alet (Suikast Değneği)" })
 
 Troll:AddDropdown({
-    Name = "Alet Modunu Seç",
+    Name = "⚙️ Alet Modunu Seç",
     Options = {"Couch Kill", "Bus Fling", "House Ban"},
     Default = "Couch Kill",
     Callback = function(value)
@@ -2044,7 +2054,7 @@ Troll:AddDropdown({
 })
 
 Troll:AddButton({
-    Name = "Tetikli Aleti Envantere Ver",
+    Name = "🎒 Tetikli Aleti Envantere Ver",
     Callback = function()
         -- Çantada eski alet varsa sil
         if LocalPlayer.Backpack:FindFirstChild("XENO Değnek") then
@@ -2079,7 +2089,7 @@ Troll:AddButton({
         end)
         
         tool.Parent = LocalPlayer.Backpack
-        Notify("Alet Verildi", "Çantana 'XENO Değnek' eklendi. Hedefin üstüne tıkla!")
+        Notify("🎁 Alet Verildi", "Çantana 'XENO Değnek' eklendi. Hedefin üstüne tıkla!")
     end
 })
 
@@ -2087,35 +2097,35 @@ Troll:AddButton({
 -- 5. MANUEL ÖLÜMCÜL METOTLAR
 -- ==========================================
 
-Troll:AddSection({ Name = "Ölümcül Metotlar (Manuel Tetik)" })
+Troll:AddSection({ Name = "☠️ Ölümcül Metotlar (Manuel Tetik)" })
 
 Troll:AddButton({
-    Name = "Koltukla Öldür (Couch Kill)",
+    Name = "🛋️ Koltukla Öldür (Couch Kill)",
     Callback = function() if selectedPlayerName then TrollMethods.CouchKill(selectedPlayerName) end end
 })
 
 Troll:AddButton({
-    Name = "Otobüsle Ez & Fırlat (Bus Fling)",
+    Name = "🚌 Otobüsle Ez & Fırlat (Bus Fling)",
     Callback = function() if selectedPlayerName then TrollMethods.BusFling(selectedPlayerName) end end
 })
 
 Troll:AddButton({
-    Name = "Evden Banlayarak Öldür (House Ban)",
+    Name = "🏠 Evden Banlayarak Öldür (House Ban)",
     Callback = function() if selectedPlayerName then TrollMethods.HouseBan(selectedPlayerName) end end
 })
 
 -- ==========================================
 -- 6. EVRENSEL FLING (Görünmez Dönüş)
 -- ==========================================
-Troll:AddSection({ Name = "Evrensel Fling (Her Oyunda Çalışır)" })
+Troll:AddSection({ Name = "🌪️ Evrensel Fling (Her Oyunda Çalışır)" })
 
 Troll:AddToggle({
-    Name = "Döngüsel Fırlatma (Loop Fling)",
+    Name = "🌀 Döngüsel Fırlatma (Loop Fling)",
     Default = false,
     Callback = function(value)
         loopFlingEnabled = value
         if loopFlingEnabled then
-            Notify("Loop Fling", "Aktif edildi, hedefe yapışılıyor!")
+            Notify("🌀 Loop Fling", "Aktif edildi, hedefe yapışılıyor!")
             local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not root then return end
             
@@ -2135,7 +2145,7 @@ Troll:AddToggle({
                 end
             end)
         else
-            Notify("Loop Fling", "Durduruldu.")
+            Notify("🛑 Loop Fling", "Durduruldu.")
             if flingConnection then flingConnection:Disconnect() end
             local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if root and root:FindFirstChild("XenoFling") then root.XenoFling:Destroy() end
@@ -2145,6 +2155,7 @@ Troll:AddToggle({
         end
     end
 })
+
 -- Araba Sekmesi
 local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
 -- ======================================================
