@@ -3289,5 +3289,177 @@ scriptsTab:AddButton({
     end
 })
 
+--[[
+    Hexagon Client - VIP Parçacık Verici (VIP Particle Giver)
+    Temel: Tıklama ile Parçacık Oluşturma (Tetikli Tool)
+    Hedef Oyun: Brookhaven RP
+]]
+
+local VIPParticles = Window:MakeTab({ Title = "VIP Parçacıklar ✨", Icon = "star" })
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+
+-- Değişkenler
+local selectedParticle = "Hearts Blue" -- Varsayılan parçacık
+local toolEnabled = false
+local currentTool = nil
+local toolColor = Color3.fromRGB(0, 255, 255) -- Cyan (Hexagon Tema)
+
+-- Parçacık Listesi (Tıpkı görsellerdeki gibi full liste)
+local availableParticles = {
+    -- Işıltılar (Free/Twinkle/Sparks)
+    "Free White", "Free Yellow", "Free Orange", "Free Green", "Free Blue", "Free Purple", "Free Pink", "Free Red",
+    "Twinkle White", "Twinkle Yellow", "Twinkle Green", "Twinkle Purple", "Twinkle Pink", "Twinkle Red",
+    "Sparks White", "Sparks Green", "Sparks Blue", "Sparks Purple", "Sparks Pink", "Sparks Red",
+    -- Kalpler (Hearts)
+    "Hearts Yellow", "Hearts Green", "Hearts Blue", "Hearts Purple", "Hearts Pink", "Hearts Red",
+    -- Noktalar (Dots)
+    "Dots Orange", "Dots Yellow", "Dots White", "Dots Green", "Dots Blue", "Dots Purple", "Dots Pink", "Dots Red",
+    -- Diğer VIP
+    "Bubble White", "Bubble Green", "Bubble Blue", "Bubble Purple", "Bubble Red",
+    "Music White", "Music Green", "Music Blue", "Music Purple", "Music Red",
+    "Fire White", "Fire Orange", "Fire Green", "Fire Blue", "Fire Purple", "Fire Black",
+    "Smoke White", "Smoke Yellow", "Smoke Orange", "Smoke Green", "Smoke Blue", "Smoke Purple", "Smoke Red", "Smoke Black",
+    "Star White", "Star Orange", "Star Green", "Star Blue", "Star Purple", "Star Pink", "Star Red"
+}
+
+-- ==========================================
+-- 1. YARDIMCI FONKSİYONLAR (Dex & Notify)
+-- ==========================================
+
+-- Bildirim Sistemi
+local function Notify(title, text)
+    StarterGui:SetCore("SendNotification", {
+        Title = "✨ VIP " .. title;
+        Text = text;
+        Icon = "rbxassetid://15018617505"; -- Yıldız ikonu (Örnek)
+        Duration = 3;
+    })
+end
+
+-- Brookhaven RE (RemoteEvent) Bulucu (Dex Explorer Mantığı)
+local function getBrookhavenRE()
+    -- Genellikle ReplicatedStorage.RE'dir ama garantiye alalım
+    local RE = ReplicatedStorage:FindFirstChild("RE")
+    if not RE then
+        -- Eğer direkt bulamazsa, Dex mantığıyla alt klasörleri tarar
+        for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+            if v:IsA("RemoteEvent") and v.Name == "RE" then
+                RE = v
+                break
+            end
+        end
+    end
+    return RE
+end
+
+-- ==========================================
+-- 2. ANA PARÇACIK VERME FONKSİYONU (FireServer)
+-- ==========================================
+
+local function createParticle(targetPos)
+    local RE = getBrookhavenRE()
+    if RE then
+        -- Brookhaven FireServer mantığı (Tahmini argüman yapısı)
+        -- Argümanlar: "SpawnParticle", ParçacıkAdı, Pozisyon/CFrame, Renk
+        RE:FireServer("SpawnParticle", selectedParticle, targetPos, toolColor)
+    else
+        Notify("Hata", "Fireserver RE bulunamadı! Brookhaven'da mısın?")
+    end
+end
+
+-- ==========================================
+-- 3. AYARLAR SEKMESİ
+-- ==========================================
+
+VIPParticles:AddSection({ Name = "⚙️ Parçacık Ayarları" })
+
+-- Parçacık Seçimi (Görsellerdeki tüm liste)
+VIPParticles:AddDropdown({
+    Name = "✨ Parçacık Türünü Seç",
+    Options = availableParticles,
+    Default = "Hearts Blue",
+    Callback = function(value)
+        selectedParticle = value
+    end
+})
+
+-- Renk Seçimi (Hexagon Client Cyan varsayılan)
+VIPParticles:AddColorPicker({
+    Name = "🎨 Parçacık Rengi",
+    Default = Color3.fromRGB(0, 255, 255),
+    Callback = function(value)
+        toolColor = value
+        if toolEnabled and currentTool then
+            currentTool.Handle.Color = toolColor
+        end
+    end
+})
+
+-- ==========================================
+-- 4. TETİKLİ ALET (TOL) SİSTEMİ
+-- ==========================================
+
+VIPParticles:AddSection({ Name = "🪄 Tetikleyici Alet (Tıkla ve Oluştur)" })
+
+VIPParticles:AddToggle({
+    Name = "🎒 Parçacık Değneğini Ver/Al",
+    Default = false,
+    Callback = function(value)
+        toolEnabled = value
+        
+        if toolEnabled then
+            -- Çantada eski tool varsa sil
+            if LocalPlayer.Backpack:FindFirstChild("Parçacık Değneği ✨") then
+                LocalPlayer.Backpack["Parçacık Değneği ✨"]:Destroy()
+            end
+
+            -- Yeni Tool Oluştur
+            local tool = Instance.new("Tool")
+            tool.Name = "Parçacık Değneği ✨"
+            tool.RequiresHandle = true
+            tool.ToolTip = "Tıkladığın yere parçacık atar."
+            
+            -- Tool Sapı (Handle)
+            local handle = Instance.new("Part")
+            handle.Name = "Handle"
+            handle.Size = Vector3.new(0.5, 4, 0.5)
+            handle.Material = Enum.Material.Neon
+            handle.Color = toolColor -- Cyan (Hexagon Tema)
+            handle.Anchored = false
+            handle.CanCollide = false
+            handle.Parent = tool
+            
+            -- Tool Tetikleme (Activated)
+            tool.Activated:Connect(function()
+                local mouse = LocalPlayer:GetMouse()
+                local targetPos = mouse.Hit.Position -- Fare imlecinin dünyadaki pozisyonu
+                
+                -- Parçacığı FireServer ile oluştur
+                createParticle(targetPos)
+            end)
+            
+            tool.Parent = LocalPlayer.Backpack
+            currentTool = tool
+            Notify("Aktif", "Çantana 'Parçacık Değneği' eklendi. Tıkla ve parçacık at!")
+            
+        else
+            -- Tool'u Kapat
+            if LocalPlayer.Backpack:FindFirstChild("Parçacık Değneği ✨") then
+                LocalPlayer.Backpack["Parçacık Değneği ✨"]:Destroy()
+            end
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Parçacık Değneği ✨") then
+                LocalPlayer.Character["Parçacık Değneği ✨"]:Destroy()
+            end
+            currentTool = nil
+            Notify("Devre Dışı", "Parçacık Değneği kaldırıldı.")
+        end
+    end
+})
+
+Notify("VIP Particle", "VIP Parçacık Verici başarıyla yüklendi! ✨")
 
 print("Xeno Hub başarıyla yüklendi!")
