@@ -1796,14 +1796,17 @@ Tab:AddToggle({
     end
 })
 
--- XENO HUB - Gelişmiş Troll & AI View Sekmesi
+--- XENO HUB - Gelişmiş Troll & AI View Sekmesi
 -- Yapımcı: Ege (XENO HUB)
+-- Özellikler: Brookhaven RP (RE Remotes), Dex Explorer Mantığı, AI View, Tetikli Alet
 
 local Troll = Window:MakeTab({ Title = "Troll & Suikast", Icon = "skull" })
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 local Camera = Workspace.CurrentCamera
 
 -- Değişkenler
@@ -1812,12 +1815,140 @@ local spectateEnabled = false
 local loopFlingEnabled = false
 local viewConnection
 local flingConnection
+local toolMode = "Couch Kill" -- Tetikli Alet için varsayılan mod
 
 -- ==========================================
--- 1. AI YÖNETİMİ & OTOMATİK OYUNCU LİSTESİ
+-- 1. YARDIMCI FONKSİYONLAR (NOTIFY & DEX)
 -- ==========================================
 
--- Oyuncu Listesini Alma (Tablo Formatı)
+-- Bildirim Sistemi
+local function Notify(title, text)
+    StarterGui:SetCore("SendNotification", {
+        Title = "XENO HUB | " .. title;
+        Text = text;
+        Icon = "rbxassetid://15018617505"; -- Kuru kafa veya uyarı ikonu
+        Duration = 5;
+    })
+end
+
+-- Brookhaven RE (RemoteEvent) Bulucu (Dex Explorer Mantığı)
+local function getBrookhavenRE()
+    local RE = ReplicatedStorage:FindFirstChild("RE")
+    if not RE then
+        for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+            if v:IsA("RemoteEvent") and v.Name == "RE" then
+                RE = v
+                break
+            end
+        end
+    end
+    return RE
+end
+
+local function getTarget(playerName)
+    local pName = playerName or selectedPlayerName
+    if pName then
+        local targetPlayer = Players:FindFirstChild(pName)
+        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            return targetPlayer, targetPlayer.Character
+        end
+    end
+    return nil, nil
+end
+
+-- ==========================================
+-- 2. TROLL METOTLARI (BROOKHAVEN RP ÖZEL)
+-- ==========================================
+
+local TrollMethods = {}
+
+TrollMethods.CouchKill = function(targetName)
+    local targetPlayer, targetChar = getTarget(targetName)
+    if not targetChar then return Notify("Hata", "Hedef bulunamadı!") end
+    
+    local RE = getBrookhavenRE()
+    if RE then
+        Notify("Couch Kill", targetName .. " koltukla void'e yollanıyor...")
+        -- Brookhaven Prop Spawn Remote
+        RE:FireServer("SpawnProp", "Couch")
+        
+        -- Çıkan koltuğu bul ve hedefe ışınla
+        task.delay(0.5, function()
+            for _, prop in pairs(Workspace:GetChildren()) do
+                if prop.Name == "Couch" and prop:FindFirstChild("Seat") then
+                    -- Koltuğu hedefin altına koy
+                    prop:PivotTo(targetChar.HumanoidRootPart.CFrame)
+                    task.wait(0.5)
+                    -- Hedef oturduğunda void'e çek
+                    prop:PivotTo(CFrame.new(0, -9999, 0))
+                    task.wait(1)
+                    RE:FireServer("DespawnProp", prop)
+                    break
+                end
+            end
+        end)
+    else
+        Notify("Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
+    end
+end
+
+TrollMethods.BusFling = function(targetName)
+    local targetPlayer, targetChar = getTarget(targetName)
+    if not targetChar then return Notify("Hata", "Hedef bulunamadı!") end
+    
+    local RE = getBrookhavenRE()
+    if RE then
+        Notify("Bus Fling", targetName .. " otobüsle eziliyor...")
+        RE:FireServer("SpawnVehicle", "SchoolBus")
+        
+        task.delay(1, function()
+            local vehicle = Workspace.Vehicles:FindFirstChild(LocalPlayer.Name .. "Car")
+            if vehicle and vehicle:FindFirstChild("Body") then
+                local rootPart = vehicle.Body
+                -- Dönüş hızı (Fling etkisi)
+                local spin = Instance.new("BodyAngularVelocity", rootPart)
+                spin.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                spin.AngularVelocity = Vector3.new(0, 50000, 0)
+                
+                -- Hedefin üstüne ışınla
+                local duration = 0
+                local flingLoop = RunService.RenderStepped:Connect(function()
+                    if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and vehicle.PrimaryPart then
+                        vehicle:PivotTo(targetChar.HumanoidRootPart.CFrame)
+                    end
+                    duration = duration + 1
+                    if duration > 150 then -- Yaklaşık 3 saniye sonra durdur
+                        spin:Destroy()
+                        RE:FireServer("DespawnVehicle")
+                    end
+                end)
+                task.delay(3, function() flingLoop:Disconnect() end)
+            end
+        end)
+    else
+        Notify("Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
+    end
+end
+
+TrollMethods.HouseBan = function(targetName)
+    local targetPlayer, targetChar = getTarget(targetName)
+    if not targetChar then return Notify("Hata", "Hedef bulunamadı!") end
+    
+    local RE = getBrookhavenRE()
+    if RE then
+        Notify("House Ban Kill", targetName .. " evden banlanıyor...")
+        -- Ev banlama eventi tetiklenir (Hedef buga girer)
+        RE:FireServer("HouseBan", targetPlayer)
+        RE:FireServer("HouseUnban", targetPlayer) -- Bug'da kalması için anında unban/ban döngüsü
+    else
+        Notify("Uyumsuz Oyun", "Bu özellik Brookhaven RP içindir.")
+    end
+end
+
+-- ==========================================
+-- 3. AI YÖNETİMİ & OTOMATİK OYUNCU LİSTESİ
+-- ==========================================
+
 local function getPlayerList()
     local playerNames = {}
     for _, player in ipairs(Players:GetPlayers()) do
@@ -1828,24 +1959,8 @@ local function getPlayerList()
     return playerNames
 end
 
--- Hedefin Karakterini ve Humanoid'ini Güvenli Şekilde Alma
-local function getTarget()
-    if selectedPlayerName then
-        local targetPlayer = Players:FindFirstChild(selectedPlayerName)
-        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            return targetPlayer, targetPlayer.Character
-        end
-    end
-    return nil, nil
-end
+Troll:AddSection({ Name = "Hedef Seçimi & AI İzleme" })
 
--- ==========================================
--- 2. ARAYÜZ (UI) BİLEŞENLERİ
--- ==========================================
-
-Troll:AddSection({ Name = "Hedef Seçimi" })
-
--- Oyuncu Seçimi ve Otomatik Odaklama
 local playerDropdown = Troll:AddDropdown({
     Name = "Hedef Oyuncu Seç",
     Options = getPlayerList(),
@@ -1853,53 +1968,47 @@ local playerDropdown = Troll:AddDropdown({
     Callback = function(value)
         selectedPlayerName = value
         getgenv().Target = value
-        
-        -- Eğer izleme modundaysak, oyuncu değişince kamerayı anında yeni hedefe kaydır
         if spectateEnabled and selectedPlayerName then
             local _, targetChar = getTarget()
             if targetChar and targetChar:FindFirstChild("Humanoid") then
                 Camera.CameraSubject = targetChar.Humanoid
+                Notify("AI View", value .. " izleniyor.")
             end
         end
     end
 })
 
--- [AI & OTOMASYON] Otomatik Liste Güncelleyici (Her 5 Saniyede Bir)
+-- Otomatik Liste Güncelleyici
 spawn(function()
     while wait(5) do 
         if playerDropdown then
-            -- Seçili oyuncu oyundan çıkmışsa seçimi temizle
             if selectedPlayerName and not Players:FindFirstChild(selectedPlayerName) then
                 selectedPlayerName = nil
                 getgenv().Target = nil
+                Notify("Bilgi", "Seçili hedef oyundan çıktı.")
             end
             playerDropdown:Refresh(getPlayerList(), true)
         end
     end
 end)
 
--- İzleme Modu (AI Auto View)
 Troll:AddToggle({
-    Name = "View",
+    Name = "AI Akıllı İzle (Auto View)",
     Default = false,
     Callback = function(value)
         spectateEnabled = value
-        
         if spectateEnabled then
-            -- AI Takip Döngüsü: Hedef ölse bile tekrar doğduğunda kamerayı ona kitler
             viewConnection = RunService.RenderStepped:Connect(function()
                 if selectedPlayerName then
                     local targetPlayer = Players:FindFirstChild(selectedPlayerName)
                     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
                         Camera.CameraSubject = targetPlayer.Character.Humanoid
                     else
-                        -- Hedef öldüyse veya yüklenmediyse geçici olarak kendine dön
                         Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
                     end
                 end
             end)
         else
-            -- Kapatıldığında bağlantıyı kes ve kamerayı sıfırla
             if viewConnection then viewConnection:Disconnect() end
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                 Camera.CameraSubject = LocalPlayer.Character.Humanoid
@@ -1908,92 +2017,108 @@ Troll:AddToggle({
     end
 })
 
-Troll:AddSection({ Name = "Temel Hareketler" })
-
 Troll:AddButton({
     Name = "Hedefe Işınlan (Teleport)",
     Callback = function()
         local _, targetChar = getTarget()
         if targetChar and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- Hedefin arkasına ışınlan (Troll için daha iyi)
             LocalPlayer.Character.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        else
-            -- UI kütüphanenin bildirim özelliği varsa buraya eklenebilir
-            print("XENO HUB: Hedef bulunamadı veya karakteri yüklenmedi!")
+            Notify("Işınlanma", selectedPlayerName .. " yanına gidildi.")
         end
     end
 })
 
 -- ==========================================
--- 3. GELİŞMİŞ TROLL & ÖLDÜRME METOTLARI
+-- 4. TETİKLİ ALET (SUİKAST SİLAHI)
 -- ==========================================
 
-Troll:AddSection({ Name = "Ölümcül Metotlar (RP Oyunları İçin)" })
+Troll:AddSection({ Name = "Tetikli Alet (Suikast Değneği)" })
+
+Troll:AddDropdown({
+    Name = "Alet Modunu Seç",
+    Options = {"Couch Kill", "Bus Fling", "House Ban"},
+    Default = "Couch Kill",
+    Callback = function(value)
+        toolMode = value
+    end
+})
+
+Troll:AddButton({
+    Name = "Tetikli Aleti Envantere Ver",
+    Callback = function()
+        -- Çantada eski alet varsa sil
+        if LocalPlayer.Backpack:FindFirstChild("XENO Değnek") then
+            LocalPlayer.Backpack["XENO Değnek"]:Destroy()
+        end
+        if LocalPlayer.Character:FindFirstChild("XENO Değnek") then
+            LocalPlayer.Character["XENO Değnek"]:Destroy()
+        end
+
+        local tool = Instance.new("Tool")
+        tool.Name = "XENO Değnek"
+        tool.RequiresHandle = false
+        tool.ToolTip = "Tıkladığın oyuncuya " .. toolMode .. " yapar."
+        
+        tool.Activated:Connect(function()
+            local mouse = LocalPlayer:GetMouse()
+            if mouse.Target and mouse.Target.Parent:FindFirstChild("Humanoid") then
+                local clickedPlayer = Players:GetPlayerFromCharacter(mouse.Target.Parent)
+                if clickedPlayer and clickedPlayer ~= LocalPlayer then
+                    selectedPlayerName = clickedPlayer.Name
+                    playerDropdown:Set(selectedPlayerName) -- Hedefi otomatik seç
+                    
+                    if toolMode == "Couch Kill" then
+                        TrollMethods.CouchKill(clickedPlayer.Name)
+                    elseif toolMode == "Bus Fling" then
+                        TrollMethods.BusFling(clickedPlayer.Name)
+                    elseif toolMode == "House Ban" then
+                        TrollMethods.HouseBan(clickedPlayer.Name)
+                    end
+                end
+            end
+        end)
+        
+        tool.Parent = LocalPlayer.Backpack
+        Notify("Alet Verildi", "Çantana 'XENO Değnek' eklendi. Hedefin üstüne tıkla!")
+    end
+})
+
+-- ==========================================
+-- 5. MANUEL ÖLÜMCÜL METOTLAR
+-- ==========================================
+
+Troll:AddSection({ Name = "Ölümcül Metotlar (Manuel Tetik)" })
 
 Troll:AddButton({
     Name = "Koltukla Öldür (Couch Kill)",
-    Callback = function()
-        local _, targetChar = getTarget()
-        if not targetChar then return print("Hedef Yok!") end
-        
-        print("XENO HUB: " .. selectedPlayerName .. " Couch Kill başlatıldı!")
-        -- Brookhaven benzeri oyunlar için Couch Kill mantığı:
-        -- 1. Bir koltuk spawnla veya haritadaki bir koltuğu bul.
-        -- 2. Koltuğa otur (Sit = true).
-        -- 3. Koltuğun CFrame'ini hedefin CFrame'ine sürekli eşitle (RunService ile).
-        -- 4. Aniden koltuktan kalk ve hedefi harita dışına (Void) fırlat.
-        
-        -- Örnek (Temsili) Altyapı:
-        -- local targetCFrame = targetChar.HumanoidRootPart.CFrame
-        -- LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame * CFrame.new(0, -5, 0)
-    end
+    Callback = function() if selectedPlayerName then TrollMethods.CouchKill(selectedPlayerName) end end
 })
 
 Troll:AddButton({
     Name = "Otobüsle Ez & Fırlat (Bus Fling)",
-    Callback = function()
-        local _, targetChar = getTarget()
-        if not targetChar then return print("Hedef Yok!") end
-        
-        print("XENO HUB: Bus Fling aktif ediliyor...")
-        -- Bus Fling Mantığı:
-        -- 1. Otobüs spawnla (Eğer oyunda araç çıkarma varsa).
-        -- 2. Aracın BasePart'ını (Gövdesini) bul.
-        -- 3. Aracın AngularVelocity (Dönüş Hızı) değerini MAX yap.
-        -- 4. Aracı hedefin tam üstüne teleport et.
-    end
+    Callback = function() if selectedPlayerName then TrollMethods.BusFling(selectedPlayerName) end end
 })
 
 Troll:AddButton({
     Name = "Evden Banlayarak Öldür (House Ban)",
-    Callback = function()
-        local _, targetChar = getTarget()
-        if not targetChar then return print("Hedef Yok!") end
-        
-        print("XENO HUB: House Ban Kill deneniyor...")
-        -- House Ban Mantığı (Brookhaven):
-        -- 1. Boş bir ev arsası bul ve evi claimle.
-        -- 2. Hedefin yanına ışınlanıp onu kucağına al (veya grab animasyonu yap).
-        -- 3. Hızlıca evin içine ışınlan.
-        -- 4. Oyuncuyu evden banlama RemoteEvent'ini tetikle. Hedef fizik motoru bug'a girip void'e düşer.
-    end
+    Callback = function() if selectedPlayerName then TrollMethods.HouseBan(selectedPlayerName) end end
 })
 
+-- ==========================================
+-- 6. EVRENSEL FLING (Görünmez Dönüş)
+-- ==========================================
 Troll:AddSection({ Name = "Evrensel Fling (Her Oyunda Çalışır)" })
 
--- Görünmez Fling Sistemi
 Troll:AddToggle({
     Name = "Döngüsel Fırlatma (Loop Fling)",
     Default = false,
     Callback = function(value)
         loopFlingEnabled = value
-        
         if loopFlingEnabled then
-            print("XENO HUB: Loop Fling Başladı!")
+            Notify("Loop Fling", "Aktif edildi, hedefe yapışılıyor!")
             local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not root then return end
             
-            -- Fling için karakterin dönüş hızını maksimuma çıkarma
             local bambam = Instance.new("BodyAngularVelocity", root)
             bambam.Name = "XenoFling"
             bambam.AngularVelocity = Vector3.new(0, 99999, 0)
@@ -2003,35 +2128,23 @@ Troll:AddToggle({
             flingConnection = RunService.Stepped:Connect(function()
                 local _, targetChar = getTarget()
                 if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Kendi karakterini hedefin tam içine sok
                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetChar.HumanoidRootPart.CFrame
-                    -- Noclip (Duvarlardan geçme) aktif et ki takılma olmasın
                     for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+                        if part:IsA("BasePart") then part.CanCollide = false end
                     end
                 end
             end)
         else
-            print("XENO HUB: Loop Fling Durduruldu.")
+            Notify("Loop Fling", "Durduruldu.")
             if flingConnection then flingConnection:Disconnect() end
-            
             local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if root and root:FindFirstChild("XenoFling") then
-                root.XenoFling:Destroy()
-            end
-            
-            -- Çarpışmaları (Collision) geri aç
+            if root and root:FindFirstChild("XenoFling") then root.XenoFling:Destroy() end
             for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+                if part:IsA("BasePart") then part.CanCollide = true end
             end
         end
     end
 })
-
 -- Araba Sekmesi
 local CarTab = Window:MakeTab({ Title = "Araçlar", Icon = "car" })
 -- ======================================================
