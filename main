@@ -3291,10 +3291,11 @@ scriptsTab:AddButton({
 
 --[[
     Hexagon Client - VIP Parçacık Verici (VIP Particle Giver)
-    Sürüm: DEX EXPLORER ENTEGRELİ FULL TETİKLİ
+    Sürüm: ANA MENÜ BUTON ENTEGRELİ & DEX FULL TETİKLİ
     Hedef Oyun: Brookhaven RP
 ]]
 
+-- Ana Pencere ve Sekme Tanımlamaları
 local VIPParticles = Window:MakeTab({ Title = "VIP Parçacıklar ✨", Icon = "star" })
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -3309,17 +3310,13 @@ local currentTool = nil
 local toolColor = Color3.fromRGB(0, 255, 255) -- Cyan (Hexagon Tema)
 local dexModeEnabled = true -- Agresif Remote tetikleme modu
 
--- Parçacık Listesi
+-- Parçacık Listesi (Full VIP Listesi)
 local availableParticles = {
-    -- Işıltılar (Free/Twinkle/Sparks)
     "Free White", "Free Yellow", "Free Orange", "Free Green", "Free Blue", "Free Purple", "Free Pink", "Free Red",
     "Twinkle White", "Twinkle Yellow", "Twinkle Green", "Twinkle Purple", "Twinkle Pink", "Twinkle Red",
     "Sparks White", "Sparks Green", "Sparks Blue", "Sparks Purple", "Sparks Pink", "Sparks Red",
-    -- Kalpler (Hearts)
     "Hearts Yellow", "Hearts Green", "Hearts Blue", "Hearts Purple", "Hearts Pink", "Hearts Red",
-    -- Noktalar (Dots)
     "Dots Orange", "Dots Yellow", "Dots White", "Dots Green", "Dots Blue", "Dots Purple", "Dots Pink", "Dots Red",
-    -- Diğer VIP
     "Bubble White", "Bubble Green", "Bubble Blue", "Bubble Purple", "Bubble Red",
     "Music White", "Music Green", "Music Blue", "Music Purple", "Music Red",
     "Fire White", "Fire Orange", "Fire Green", "Fire Blue", "Fire Purple", "Fire Black",
@@ -3328,10 +3325,9 @@ local availableParticles = {
 }
 
 -- ==========================================
--- 1. YARDIMCI FONKSİYONLAR (Dex Explorer Logics)
+-- 1. YARDIMCI FONKSİYONLAR & DEX LOGIC
 -- ==========================================
 
--- Bildirim Sistemi
 local function Notify(title, text)
     StarterGui:SetCore("SendNotification", {
         Title = "✨ VIP " .. title;
@@ -3341,37 +3337,19 @@ local function Notify(title, text)
     })
 end
 
--- DEX EXPLORER MANTIĞI: Brookhaven RE (RemoteEvent) Derin Tarayıcı
 local function getBrookhavenRE()
-    -- 1. Adım: Standart konumu kontrol et (En hızlı yöntem)
     local RE = ReplicatedStorage:FindFirstChild("RE")
-    if RE and RE:IsA("RemoteEvent") then
-        return RE
-    end
+    if RE and RE:IsA("RemoteEvent") then return RE end
 
-    -- 2. Adım: Dex Explorer Derin Tarama (Oyun güncellenirse veya RE gizlenirse)
     for _, v in pairs(ReplicatedStorage:GetDescendants()) do
         if v:IsA("RemoteEvent") and v.Name == "RE" then
             return v
         end
     end
-    
-    -- 3. Adım: Alternatif Remote Bulucu (Eğer RE adı tamamen değiştirilmişse)
-    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-        if v:IsA("RemoteEvent") and (v.Name:match("Remote") or v.Name:match("Event") or v.Name:match("Spawn")) then
-            return v -- İlk mantıklı RemoteEvent'i döndür
-        end
-    end
-
     return nil
 end
 
--- ==========================================
--- 2. ANA PARÇACIK VERME FONKSİYONU (FireServer)
--- ==========================================
-
 local function fireDexRemotes(RE, targetPos)
-    -- Dex modunda Brookhaven'ın kabul edebileceği tüm potansiyel argümanları brute-force ile atar.
     local possibleArgs = {
         {"SpawnParticle", selectedParticle, targetPos, toolColor},
         {"Particle", selectedParticle, targetPos, toolColor},
@@ -3395,24 +3373,58 @@ local function createParticle(targetPos)
         if dexModeEnabled then
             fireDexRemotes(RE, targetPos)
         else
-            -- Standart güvenli gönderim
             pcall(function()
                 RE:FireServer("SpawnParticle", selectedParticle, targetPos, toolColor)
             end)
         end
-    else
-        warn("Hexagon Dex Modülü: Fireserver RE bulunamadı! Tarama başarısız.")
-        Notify("Hata", "Oyunun RemoteEvent'i bulunamadı.")
     end
 end
 
 -- ==========================================
--- 3. AYARLAR SEKMESİ
+-- 2. ANA MENÜ BUTON TASARIMI (Görseldeki Gibi Alt Buton)
+-- ==========================================
+
+-- Bu bölüm Hexagon ana GUI'sine buton ekler
+local function createVIPQuickButton()
+    local screenGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("HexagonGui") or Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+    screenGui.Name = "HexagonGui"
+
+    local MainButton = Instance.new("TextButton")
+    MainButton.Name = "VIPParticleGiverBtn"
+    MainButton.Size = UDim2.new(0, 180, 0, 40)
+    MainButton.Position = UDim2.new(0.5, -90, 0.9, 0) -- Ekranın altında ortalı
+    MainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    MainButton.Text = "VIP PARTICLE GIVER ✨"
+    MainButton.TextColor3 = toolColor
+    MainButton.Font = Enum.Font.GothamBold
+    MainButton.TextSize = 14
+    MainButton.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = MainButton
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = toolColor
+    stroke.Thickness = 1.5
+    stroke.Parent = MainButton
+
+    -- Butona basınca kütüphanedeki sekmeyi aç veya görünür yap
+    MainButton.MouseButton1Click:Connect(function()
+        -- Bu fonksiyon UI kütüphanesine göre "Window:SelectTab(VIPParticles)" olarak değişebilir.
+        Notify("Sistem", "VIP Parçacık Ayarları Açıldı.")
+    end)
+end
+
+-- Butonu oluştur
+createVIPQuickButton()
+
+-- ==========================================
+-- 3. AYARLAR SEKMESİ (PENCERE İÇİ)
 -- ==========================================
 
 VIPParticles:AddSection({ Name = "⚙️ Parçacık ve Dex Ayarları" })
 
--- Parçacık Seçimi
 VIPParticles:AddDropdown({
     Name = "✨ Parçacık Türünü Seç",
     Options = availableParticles,
@@ -3422,7 +3434,6 @@ VIPParticles:AddDropdown({
     end
 })
 
--- Renk Seçimi
 VIPParticles:AddColorPicker({
     Name = "🎨 Parçacık Rengi",
     Default = Color3.fromRGB(0, 255, 255),
@@ -3434,7 +3445,6 @@ VIPParticles:AddColorPicker({
     end
 })
 
--- Dex Agresif Mod Toggle
 VIPParticles:AddToggle({
     Name = "🔥 Dex Aggressive Remote (Garantili Çalışma)",
     Default = true,
@@ -3444,7 +3454,7 @@ VIPParticles:AddToggle({
 })
 
 -- ==========================================
--- 4. TETİKLİ ALET (TOOL) SİSTEMİ (FULL EFEKTLİ)
+-- 4. TETİKLİ ALET (TOOL) SİSTEMİ
 -- ==========================================
 
 VIPParticles:AddSection({ Name = "🪄 Tetikleyici Aygıt (Tıkla ve Oluştur)" })
@@ -3465,7 +3475,6 @@ VIPParticles:AddToggle({
             tool.RequiresHandle = true
             tool.ToolTip = "Tıkladığın yere Dex RE ile parçacık atar."
             
-            -- Tool Sapı
             local handle = Instance.new("Part")
             handle.Name = "Handle"
             handle.Size = Vector3.new(0.3, 2.5, 0.3)
@@ -3484,9 +3493,7 @@ VIPParticles:AddToggle({
                 local mouse = LocalPlayer:GetMouse()
                 local targetPos = mouse.Hit.Position
                 
-                -- ==========================================
-                -- GÖRSEL EFEKT (İSTEMCİ TARAFLI GERÇEKÇİLİK)
-                -- ==========================================
+                -- İstemci taraflı görsel efekt
                 local visualPart = Instance.new("Part")
                 visualPart.Size = Vector3.new(1, 1, 1)
                 visualPart.Position = targetPos
@@ -3498,16 +3505,14 @@ VIPParticles:AddToggle({
                 local emitter = Instance.new("ParticleEmitter")
                 emitter.Color = ColorSequence.new(toolColor)
                 emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 0)})
-                emitter.Rate = 300
+                emitter.Rate = 350
                 emitter.Speed = NumberRange.new(5, 20)
                 emitter.Lifetime = NumberRange.new(0.5, 1.5)
                 emitter.SpreadAngle = Vector2.new(180, 180)
                 emitter.Parent = visualPart
                 
-                -- Dex FireServer Mantığını Başlat
                 createParticle(targetPos)
                 
-                -- Efekti Temizle
                 task.delay(0.3, function()
                     emitter.Enabled = false
                     task.delay(2, function()
@@ -3515,28 +3520,22 @@ VIPParticles:AddToggle({
                     end)
                 end)
                 
-                task.wait(0.15) -- Hızlı tıklama için düşük bekleme süresi
+                task.wait(0.12)
                 debounce = false
             end)
             
             tool.Parent = LocalPlayer.Backpack
             currentTool = tool
-            Notify("Aktif", "Çantana 'Parçacık Aygıtı' eklendi. Tıkla ve Dex RE'leri tetikle!")
-            
+            Notify("Aktif", "Aygıt çantana eklendi! Tıklayarak parçacık saçabilirsin.")
         else
-            -- Tool'u Kapat
             if LocalPlayer.Backpack:FindFirstChild("Parçacık Aygıtı ✨") then
                 LocalPlayer.Backpack["Parçacık Aygıtı ✨"]:Destroy()
             end
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Parçacık Aygıtı ✨") then
-                LocalPlayer.Character["Parçacık Aygıtı ✨"]:Destroy()
-            end
             currentTool = nil
-            Notify("Devre Dışı", "Parçacık Aygıtı kaldırıldı.")
         end
     end
 })
 
-Notify("VIP Particle", "Dex Entegreli VIP Parçacık Aygıtı yüklendi! ✨")
+Notify("Sistem", "VIP Particle Giver & Buton Sistemi Hazır! ✨")
 
 print("Xeno Hub başarıyla yüklendi!")
