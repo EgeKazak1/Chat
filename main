@@ -3290,9 +3290,9 @@ scriptsTab:AddButton({
 })
 
 --[[
-    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v5.0 - FULL UNLOCK & EXPLORER)
-    Özellikler: VIP + Premium + Tüm Gamepassler (Estates, Themes, Vehicles, Props vb.)
-    Yeni Eklenenler: Sertleştirilmiş Metatable Bypass, Dark Dex Explorer, Remote Spy, Marketplace Hook
+    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v6.0 - ADSTORE & SIGNAL INJECTOR)
+    Özellikler: VIP + Premium + Tüm Gamepassler (Tam Enjeksiyon)
+    Yeni Eklenenler: AdStore Zorla Açma, Ads Butonu Aktifleştirme, OnGamepassUnlocked Sinyal Tetikleyici
 ]]
 
 local Players = game:GetService("Players")
@@ -3329,7 +3329,6 @@ end
 -- BÖLÜM 0: GELİŞMİŞ BYFRON & ANTI-CHEAT BYPASS
 -- ==========================================
 local function HardenBypass()
-    -- 1. Hata ve Log Dinleyicilerini Sustur (Eski yöntem koruması)
     pcall(function()
         local getconnections = getconnections or function() return {} end
         if ScriptContext then
@@ -3340,7 +3339,6 @@ local function HardenBypass()
         end
     end)
 
-    -- 2. Metatable Hook (Sert Bypass - Kick/Ban/Robux Koruması)
     pcall(function()
         local gm = getrawmetatable(game)
         local set_readonly = setreadonly or make_writeable or function() end
@@ -3352,15 +3350,13 @@ local function HardenBypass()
             local args = {...}
             
             if not checkcaller() then
-                -- Oyundan atılmayı engelle (Kick Bypass)
                 if method == "Kick" or method == "kick" then
                     return
                 end
                 
-                -- Robux kontrolünü atlat (MarketplaceService Bypass)
                 if self.ClassName == "MarketplaceService" then
                     if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then
-                        return true -- Her zaman sahipmiş gibi göster
+                        return true
                     end
                 end
             end
@@ -3369,45 +3365,48 @@ local function HardenBypass()
         end)
         set_readonly(gm, true)
     end)
-    
-    Notify("Güvenlik", "Gelişmiş Metatable & Anti-Kick Bypass Aktif!")
 end
 
 -- ==========================================
--- BÖLÜM 1: ULTIMATE GAMEPASS & PROPERTIES BYPASS
+-- BÖLÜM 1: ADSTORE AÇICI & GAMEPASS SİNYAL ENJEKSİYONU
 -- ==========================================
-local function InitUltimateBypass()
+local function InjectGamepassesAndAdStore()
     local unlock = setreadonly or make_writeable or function() end
-    local hookFunc = function() return true end -- Her şeye 'Evet/Sahip' yanıtı verecek kanca
+    local hookFunc = function() return true end 
     
-    -- GamepassController & UnlockableController Tarama (Tüm Kilitleri Aç)
-    for _, module in pairs(ReplicatedStorage:GetDescendants()) do
-        if module:IsA("ModuleScript") then
-            if module.Name == "GamepassController" then
-                local success, gpController = pcall(require, module)
-                if success and type(gpController) == "table" then
-                    unlock(gpController, false)
-                    gpController.IsPlayerOwned = hookFunc
-                    gpController.IsOwned = hookFunc
-                    gpController.HasPass = hookFunc
-                end
-            end
-            
-            if module.Name == "UnlockableController" then
-                local success, ucController = pcall(require, module)
-                if success and type(ucController) == "table" then
-                    unlock(ucController, false)
-                    for k, v in pairs(ucController) do
-                        if type(v) == "function" then 
-                            ucController[k] = hookFunc 
-                        end
-                    end
+    -- 1. Gamepass Sinyallerini Tetikle (Sanki yeni satın alınmış gibi)
+    pcall(function()
+        local gpControllerModule = ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController
+        local gpController = require(gpControllerModule)
+        local gamepassesModule = require(ReplicatedStorage.Modules.Shared.PlayerData.Gamepasses)
+        
+        unlock(gpController, false)
+        gpController.IsPlayerOwned = hookFunc
+        gpController.IsOwned = hookFunc
+        gpController.HasPass = hookFunc
+
+        -- Tüm pass'leri tek tek oyuncuya tanımla
+        if gamepassesModule and gamepassesModule.All then
+            for passName, passData in pairs(gamepassesModule.All) do
+                if gpController.OnGamepassUnlocked then
+                    gpController.OnGamepassUnlocked:Fire(passName)
                 end
             end
         end
-    end
+    end)
 
-    -- Game8Settings Bypass (Hızlar, Bekleme Süreleri)
+    -- 2. UnlockableController Bypass
+    pcall(function()
+        local ucController = require(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
+        unlock(ucController, false)
+        for k, v in pairs(ucController) do
+            if type(v) == "function" then 
+                ucController[k] = hookFunc 
+            end
+        end
+    end)
+
+    -- 3. Hız ve Bekleme Süresi Ayarları (Game8Settings)
     task.spawn(function()
         for _, module in pairs(getloadedmodules and getloadedmodules() or {}) do
             if module.Name == "Game8Settings" then
@@ -3418,7 +3417,6 @@ local function InitUltimateBypass()
                     settingsTable.CarMaxSpeedPassLower = 300
                     settingsTable.CarMaxSpeedPass200 = 300
                     settingsTable.ScooterMaxSpeedPassLower = 100
-                    settingsTable.ScooterMaxSpeedPass200 = 100
                     settingsTable.HorseMaxSpeed = 150
                     settingsTable.CarCoolDown = 0
                     settingsTable.VIPCarCoolDown = 0
@@ -3427,28 +3425,54 @@ local function InitUltimateBypass()
             end
         end
     end)
-    
-    -- Zorunlu UI Görünürlük Kontrolü
+
+    -- 4. ADS Butonunu ve ADSTORE Framesini Açma
     task.spawn(function()
         pcall(function()
             local pGui = LocalPlayer:WaitForChild("PlayerGui")
-            for _, v in pairs(pGui:GetDescendants()) do
+            local mainGui = pGui:WaitForChild("MainGUIHandler")
+            
+            -- PanelController ile resmi yoldan açmayı dene
+            local PanelController = require(ReplicatedStorage.Modules.Client.UI.PanelController)
+            if PanelController and PanelController.Show then
+                pcall(function() PanelController.Show("AdStore") end)
+            end
+
+            -- AdStore Frame'ini manuel olarak bul ve zorla aç
+            local adStore = mainGui:FindFirstChild("AdStore") or mainGui:FindFirstChild("GamepassStore")
+            if adStore then
+                adStore.Visible = true
+                -- AdStore içindeki tüm elementleri güncelle
+                for _, element in pairs(adStore:GetDescendants()) do
+                    if element:IsA("TextLabel") and (element.Text == "Buy" or element.Text == "Satın Al") then
+                        element.Text = "OWNED"
+                        element.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    end
+                end
+            end
+
+            -- Ads (Yıldız) ImageButton'unu görünür yap ve tıkla
+            for _, v in pairs(mainGui:GetDescendants()) do
+                if v:IsA("ImageButton") or v:IsA("TextButton") then
+                    if v.Name == "Ads" or v.Name == "Ad" or v.Name == "Gamepass" then
+                        v.Visible = true
+                        v.Active = true
+                    end
+                end
+                
+                -- Kilit İkonlarını Yok Et
                 if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Locked") then
                     v.Visible = false
                 end
             end
         end)
     end)
-    
-    pcall(function()
-        if LocalPlayer:FindFirstChild("DataReady") then LocalPlayer.DataReady.Value = true end
-    end)
 
-    Notify("FULL UNLOCK", "Tüm araçlar, eşyalar ve Gamepass'ler ücretsiz açıldı!")
+    Notify("ADSTORE & UNLOCK", "Tüm Gamepass Sinyalleri Enjekte Edildi ve AdStore Açıldı!")
 end
 
 -- ==========================================
--- BÖLÜM 2: ELLER İÇİN VIP EMITTER / PARTICLE (BONUS)
+-- BÖLÜM 2: ELLER İÇİN VIP EMITTER / PARTICLE
 -- ==========================================
 local function GiveEmitterTool()
     if LocalPlayer.Backpack:FindFirstChild("Hexagon Emitter 🪄") then return end
@@ -3470,16 +3494,12 @@ local function GiveEmitterTool()
     tool.Activated:Connect(function()
         if debounce then return end
         debounce = true
-        
         local mouse = LocalPlayer:GetMouse()
         local targetPos = mouse.Hit.Position
-        
         local RE = getBrookhavenRE()
         if RE then
             pcall(function() RE:FireServer("SpawnParticle", "Hearts Blue", targetPos, Color3.fromRGB(0, 255, 255)) end)
-            pcall(function() RE:FireServer("Particle", "Hearts Blue", targetPos, Color3.fromRGB(0, 255, 255)) end)
         end
-        
         task.wait(0.15)
         debounce = false
     end)
@@ -3504,8 +3524,8 @@ local function createHexagonHub()
     -- Ana Çerçeve
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 240, 0, 190)
-    MainFrame.Position = UDim2.new(1, -260, 0.5, -95)
+    MainFrame.Size = UDim2.new(0, 240, 0, 230)
+    MainFrame.Position = UDim2.new(1, -260, 0.5, -115)
     MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
@@ -3521,7 +3541,7 @@ local function createHexagonHub()
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, 0, 0, 40)
     Title.BackgroundTransparency = 1
-    Title.Text = "HEXAGON V5 💎"
+    Title.Text = "HEXAGON V6 💎"
     Title.TextColor3 = Color3.fromRGB(0, 255, 255)
     Title.Font = Enum.Font.GothamBlack
     Title.TextSize = 16
@@ -3552,7 +3572,6 @@ local function createHexagonHub()
         Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
         
         Btn.MouseButton1Click:Connect(function()
-            -- Tıklama efekti
             game:GetService("TweenService"):Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(0, 200, 200)}):Play()
             task.wait(0.1)
             game:GetService("TweenService"):Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}):Play()
@@ -3560,30 +3579,33 @@ local function createHexagonHub()
         end)
     end
 
-    -- Buton 1: Unlock All & Bypass
-    createButton("🔓 FULL UNLOCK & BYPASS", 1, function()
+    -- Buton 1: Unlock All + AdStore (İstediğin Tetikleyici)
+    createButton("🔓 UNLOCK & AÇ ADSTORE", 1, function()
         HardenBypass()
-        InitUltimateBypass()
+        InjectGamepassesAndAdStore()
         GiveEmitterTool()
         local RE = getBrookhavenRE()
         if RE then pcall(function() RE:FireServer(" Pelis", "Check") end) end
     end)
     
-    -- Buton 2: Dex Explorer
-    createButton("📂 DEX EXPLORER AÇ", 2, function()
+    -- Buton 2: Sadece AdStore/Ads Yenile
+    createButton("🛒 ADSTORE YENİDEN AÇ", 2, function()
+        InjectGamepassesAndAdStore()
+    end)
+    
+    -- Buton 3: Dex Explorer
+    createButton("📂 DEX EXPLORER AÇ", 3, function()
         Notify("Yükleniyor", "Dark Dex Explorer başlatılıyor...")
         task.spawn(function()
-            pcall(function()
-            end)
+            pcall(function() end)
         end)
     end)
     
-    -- Buton 3: Remote Spy (FireServer İzleyici)
-    createButton("📡 REMOTE SPY (FireServer)", 3, function()
+    -- Buton 4: Remote Spy (FireServer İzleyici)
+    createButton("📡 REMOTE SPY (FireServer)", 4, function()
         Notify("Yükleniyor", "SimpleSpy (Remote izleyici) başlatılıyor...")
         task.spawn(function()
-            pcall(function()
-            end)
+            pcall(function() end)
         end)
     end)
 
@@ -3591,5 +3613,5 @@ end
 
 -- Sistemi Başlat
 createHexagonHub()
-Notify("Sistem Aktif", "Hexagon V5 Hub Yüklendi! Ekrandaki paneli kullanabilirsiniz.")
+Notify("Sistem Aktif", "Hexagon V6 (AdStore + Signal Hook) Yüklendi!")
 print("Xeno Hub başarıyla yüklendi!")
