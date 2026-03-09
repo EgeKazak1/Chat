@@ -3302,6 +3302,11 @@ local ScriptContext = game:GetService("ScriptContext")
 local LogService = game:GetService("LogService")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
 
 -- Crash/Ban loglarını ve anti-cheat tespitlerini körelt (Byfron Stealth)
 pcall(function()
@@ -3313,12 +3318,6 @@ pcall(function()
         for _, connection in pairs(getconnections(LogService.MessageOut)) do connection:Disable() end
     end
 end)
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterGui = game:GetService("StarterGui")
-local UserInputService = game:GetService("UserInputService")
 
 local function Notify(title, text)
     pcall(function()
@@ -3342,16 +3341,16 @@ local function getBrookhavenRE()
 end
 
 -- ==========================================
--- BÖLÜM 1: ULTIMATE GAMEPASS & PROPERTIES BYPASS
+-- BÖLÜM 1: ULTIMATE GAMEPASS, ADS & PROPERTIES BYPASS
 -- ==========================================
 local function InitUltimateBypass()
     local unlock = setreadonly or make_writeable or function() end
     local hookFunc = function() return true end -- Her şeye 'Evet/Sahip' yanıtı verecek kanca
     
-    -- 1. GamepassController & UnlockableController Tarama (Tüm Kilitleri Aç)
-    -- Tüm modülleri tarayıp 'IsOwned', 'IsPlayerOwned' gibi korumaları pasifize ediyoruz.
+    -- 1. GamepassController, UnlockableController & AdFeatures Tarama (Tüm Kilitleri Aç)
     for _, module in pairs(ReplicatedStorage:GetDescendants()) do
         if module:IsA("ModuleScript") then
+            
             -- GamepassController Bypass (VIP, Premium, Themes, Disaster, Music vb.)
             if module.Name == "GamepassController" then
                 local success, gpController = pcall(require, module)
@@ -3360,7 +3359,6 @@ local function InitUltimateBypass()
                     gpController.IsPlayerOwned = hookFunc
                     gpController.IsOwned = hookFunc
                     gpController.HasPass = hookFunc
-                    -- GamepassVisibility modülü buradaki sonuçlara göre UI butonlarını (Props, Araç vb.) görünür yapar
                 end
             end
             
@@ -3376,11 +3374,23 @@ local function InitUltimateBypass()
                     end
                 end
             end
+            
+            -- GamepassVisibility Bypass (UI Kilitlerini Açan Modül)
+            if module.Name == "GamepassVisibility" then
+                local success, visController = pcall(require, module)
+                if success and type(visController) == "table" then
+                    unlock(visController, false)
+                    if visController.UpdateVisibility then
+                        visController.UpdateVisibility = function(self)
+                            if self.Instance then self.Instance.Visible = true end
+                        end
+                    end
+                end
+            end
         end
     end
 
     -- 2. Game8Settings Bypass (Hızlar, Bekleme Süreleri)
-    -- Araç hızı limiti, ev spawn süresi vb. tamamen kalkıyor
     task.spawn(function()
         for _, module in pairs(getloadedmodules and getloadedmodules() or {}) do
             if module.Name == "Game8Settings" then
@@ -3401,13 +3411,38 @@ local function InitUltimateBypass()
         end
     end)
     
-    -- 3. Zorunlu UI Görünürlük Kontrolü (GamepassVisibility Failsafe)
+    -- 3. Zorunlu UI Görünürlük Kontrolü (Ads, AdFeatures, Promos ve Kilitleri zorla aç)
     task.spawn(function()
         pcall(function()
             local pGui = LocalPlayer:WaitForChild("PlayerGui")
             for _, v in pairs(pGui:GetDescendants()) do
-                -- Kilit ikonlarını gizle
+                
+                -- Kilit İkonlarını Gizle
                 if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Locked") then
+                    v.Visible = false
+                end
+                
+                -- ADS / Reklam / Promo Butonlarına Tam Erişim (ImageButton & TextButton)
+                if v:IsA("ImageButton") or v:IsA("TextButton") then
+                    local lowerName = string.lower(v.Name)
+                    -- Ad, Ads, Promo içeren butonları ve Chinook gibi reklamlı eşyaları aç
+                    if string.match(lowerName, "ad") or string.match(lowerName, "promo") or string.match(lowerName, "chinook") then
+                        v.Visible = true
+                        v.Active = true
+                        v.Selectable = true
+                        
+                        -- Eğer butonun içinde gizli bir kilit varsa yok et
+                        local innerLock = v:FindFirstChild("Lock") or v:FindFirstChild("Locked")
+                        if innerLock then innerLock.Visible = false end
+                        
+                        -- Üzerindeki karartma (Darken) veya seçilemezlik katmanlarını kaldır
+                        local darken = v:FindFirstChild("Darken")
+                        if darken then darken.Visible = false end
+                    end
+                end
+                
+                -- Satın alma (Upsell) menülerini devre dışı bırakıp direkt kullandırmak için Buy butonlarını gizle
+                if v:IsA("Frame") and v.Name == "Upsell" then
                     v.Visible = false
                 end
             end
@@ -3419,7 +3454,7 @@ local function InitUltimateBypass()
         if LocalPlayer:FindFirstChild("DataReady") then LocalPlayer.DataReady.Value = true end
     end)
 
-    Notify("FULL UNLOCK", "Premium, VIP, Themes, Estates, Music, Props, Araçlar, Emitterler AKTİF!")
+    Notify("FULL UNLOCK", "Premium, VIP, Ads, Evler, Araçlar ve Emitterler AKTİF!")
 end
 
 -- ==========================================
@@ -3462,7 +3497,7 @@ local function GiveEmitterTool()
 end
 
 -- ==========================================
--- BÖLÜM 3: SÜRÜKLENEBİLİR TETİK BUTONU (GİZLİ)
+-- BÖLÜM 3: SÜRÜKLENEBİLİR TETİK BUTONU
 -- ==========================================
 local function createVIPQuickButton()
     local targetParent = (gethui and gethui()) or (pcall(function() return CoreGui end) and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
@@ -3478,13 +3513,13 @@ local function createVIPQuickButton()
 
     local MainButton = Instance.new("TextButton")
     MainButton.Name = "MainTrigger"
-    MainButton.Size = UDim2.new(0, 220, 0, 50)
-    MainButton.Position = UDim2.new(1, -240, 0.5, 0)
+    MainButton.Size = UDim2.new(0, 240, 0, 50)
+    MainButton.Position = UDim2.new(1, -260, 0.5, 0)
     MainButton.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     MainButton.Text = "HEXAGON UNLOCK ALL 💎"
     MainButton.TextColor3 = Color3.fromRGB(0, 255, 255)
     MainButton.Font = Enum.Font.GothamBold
-    MainButton.TextSize = 13
+    MainButton.TextSize = 14
     MainButton.Active = true
     MainButton.Draggable = true 
     MainButton.Parent = screenGui
@@ -3503,27 +3538,29 @@ local function createVIPQuickButton()
         end
     end)
 
-    -- Akıcı sürükleme logiği
+    -- Akıcı sürükleme logiği (Exploit uyumluluğu için)
     local dragging, dragInput, dragStart, startPos
     MainButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = MainButton.Position
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             MainButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            dragging = false 
+        end
     end)
 end
 
 -- Başlat
 createVIPQuickButton()
-Notify("Sistem", "Hexagon Full Byfron Bypass Aktif. Unkock Butonu Eklendi.")
+Notify("Sistem", "Hexagon Full Byfron Bypass Aktif. Unlock Butonu Eklendi.")
 print("Xeno Hub başarıyla yüklendi!")
