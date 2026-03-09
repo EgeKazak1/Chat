@@ -3290,20 +3290,20 @@ scriptsTab:AddButton({
 })
 
 --[[
-    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v3.0)
-    Özellikler: VIP + Premium + Gamepass Bypass + Speed Bypass + Byfron Anti-Lag
-    Durum: FULL UNLOCKED & STEALTH
+    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v4.0 - FULL UNLOCK)
+    Özellikler: VIP + Premium + Tüm Gamepassler (Estates, Themes, Vehicles, Props vb.)
+    Byfron Bypass, Hız Limitör İptali, Görünürlük Koruması (GamepassVisibility Bypass)
 ]]
 
 -- ==========================================
--- BÖLÜM 0: BYFRON/HYPERION & ANTI-LAG (GİZLİLİK)
+-- BÖLÜM 0: BYFRON/HYPERION & ANTI-LAG KORUMASI
 -- ==========================================
 local ScriptContext = game:GetService("ScriptContext")
 local LogService = game:GetService("LogService")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
--- Hata loglarını ve anti-cheat sinyallerini kapat
+-- Crash/Ban loglarını ve anti-cheat tespitlerini körelt (Byfron Stealth)
 pcall(function()
     local getconnections = getconnections or function() return {} end
     if ScriptContext then
@@ -3314,46 +3314,23 @@ pcall(function()
     end
 end)
 
--- Arayüz Kütüphanesi Yapısı
-local HexagonUI = { Tabs = {} }
-local Window = {
-    MakeTab = function(data)
-        local tab = {Name = data.Title}
-        table.insert(HexagonUI.Tabs, tab)
-        return {
-            AddSection = function(self, secData) end,
-            AddToggle = function(self, tData) end,
-            AddButton = function(self, bData) end,
-        }
-    end
-}
-
-local BypassTab = Window:MakeTab({ Title = "Ultimate Bypass 🔓", Icon = "unlock" })
-local VIPParticles = Window:MakeTab({ Title = "VIP Parçacıklar ✨", Icon = "star" })
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
 
--- ==========================================
--- BÖLÜM 1: BİLDİRİM SİSTEMİ
--- ==========================================
 local function Notify(title, text)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
             Title = "💠 Hexagon: " .. title;
             Text = text;
             Icon = "rbxassetid://15018617505";
-            Duration = 4;
+            Duration = 5;
         })
     end)
 end
 
--- ==========================================
--- BÖLÜM 2: DEX & REMOTE AGGRESSIVE TRIGGER
--- ==========================================
 local function getBrookhavenRE()
     local RE = ReplicatedStorage:FindFirstChild("RE")
     if not RE then
@@ -3365,62 +3342,127 @@ local function getBrookhavenRE()
 end
 
 -- ==========================================
--- BÖLÜM 3: FULL GAMEPASS & PREMIUM BYPASS
+-- BÖLÜM 1: ULTIMATE GAMEPASS & PROPERTIES BYPASS
 -- ==========================================
 local function InitUltimateBypass()
     local unlock = setreadonly or make_writeable or function() end
+    local hookFunc = function() return true end -- Her şeye 'Evet/Sahip' yanıtı verecek kanca
     
-    -- 1. GamepassController Bypass (VIP & Premium)
-    local success, GamepassController = pcall(function()
-        return require(ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController)
-    end)
-    
-    if success and type(GamepassController) == "table" then
-        unlock(GamepassController, false)
-        GamepassController.IsPlayerOwned = function() return true end
-        Notify("Bypass", "Tüm Gamepass'ler (VIP/Premium) Aktif Edildi!")
-    end
-
-    -- 2. UnlockableController Bypass (Evler, Araçlar, Eşyalar)
-    local success2, UnlockableController = pcall(function()
-        return require(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
-    end)
-    
-    if success2 and type(UnlockableController) == "table" then
-        unlock(UnlockableController, false)
-        local bypassFunc = function() return true end
-        for k, v in pairs(UnlockableController) do
-            if type(v) == "function" then UnlockableController[k] = bypassFunc end
+    -- 1. GamepassController & UnlockableController Tarama (Tüm Kilitleri Aç)
+    -- Tüm modülleri tarayıp 'IsOwned', 'IsPlayerOwned' gibi korumaları pasifize ediyoruz.
+    for _, module in pairs(ReplicatedStorage:GetDescendants()) do
+        if module:IsA("ModuleScript") then
+            -- GamepassController Bypass (VIP, Premium, Themes, Disaster, Music vb.)
+            if module.Name == "GamepassController" then
+                local success, gpController = pcall(require, module)
+                if success and type(gpController) == "table" then
+                    unlock(gpController, false)
+                    gpController.IsPlayerOwned = hookFunc
+                    gpController.IsOwned = hookFunc
+                    gpController.HasPass = hookFunc
+                    -- GamepassVisibility modülü buradaki sonuçlara göre UI butonlarını (Props, Araç vb.) görünür yapar
+                end
+            end
+            
+            -- UnlockableController Bypass (Evler, Arsalar, Araçlar, Proplar)
+            if module.Name == "UnlockableController" then
+                local success, ucController = pcall(require, module)
+                if success and type(ucController) == "table" then
+                    unlock(ucController, false)
+                    for k, v in pairs(ucController) do
+                        if type(v) == "function" then 
+                            ucController[k] = hookFunc 
+                        end
+                    end
+                end
+            end
         end
-        Notify("Bypass", "Kilitli Tüm İçerikler Açıldı!")
     end
 
-    -- 3. Game8Settings Bypass (Hız & Bekleme Süreleri)
+    -- 2. Game8Settings Bypass (Hızlar, Bekleme Süreleri)
+    -- Araç hızı limiti, ev spawn süresi vb. tamamen kalkıyor
     task.spawn(function()
         for _, module in pairs(getloadedmodules and getloadedmodules() or {}) do
             if module.Name == "Game8Settings" then
-                local success3, settingsTable = pcall(require, module)
-                if success3 and type(settingsTable) == "table" then
+                local success, settingsTable = pcall(require, module)
+                if success and type(settingsTable) == "table" then
                     unlock(settingsTable, false)
                     settingsTable.CarMaxSpeedRegularPlayer = 300
+                    settingsTable.CarMaxSpeedPassLower = 300
                     settingsTable.CarMaxSpeedPass200 = 300
+                    settingsTable.ScooterMaxSpeedPassLower = 100
+                    settingsTable.ScooterMaxSpeedPass200 = 100
+                    settingsTable.HorseMaxSpeed = 150
                     settingsTable.CarCoolDown = 0
                     settingsTable.VIPCarCoolDown = 0
-                    settingsTable.HorseMaxSpeed = 150
-                    Notify("Bypass", "Hız Limitleri ve Bekleme Süreleri Silindi!")
+                    settingsTable.VIPHouseTimer = 0
                 end
             end
         end
     end)
     
-    -- Patched & Fetched Verilerini Temizle
+    -- 3. Zorunlu UI Görünürlük Kontrolü (GamepassVisibility Failsafe)
+    task.spawn(function()
+        pcall(function()
+            local pGui = LocalPlayer:WaitForChild("PlayerGui")
+            for _, v in pairs(pGui:GetDescendants()) do
+                -- Kilit ikonlarını gizle
+                if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Locked") then
+                    v.Visible = false
+                end
+            end
+        end)
+    end)
+    
+    -- Fetched/Patched senkronizasyonu
     pcall(function()
         if LocalPlayer:FindFirstChild("DataReady") then LocalPlayer.DataReady.Value = true end
     end)
+
+    Notify("FULL UNLOCK", "Premium, VIP, Themes, Estates, Music, Props, Araçlar, Emitterler AKTİF!")
 end
 
 -- ==========================================
--- BÖLÜM 4: SÜRÜKLENEBİLİR MODÜLER BUTON
+-- BÖLÜM 2: ELLER İÇİN VIP EMITTER / PARTICLE (BONUS)
+-- ==========================================
+local function GiveEmitterTool()
+    if LocalPlayer.Backpack:FindFirstChild("Hexagon Emitter 🪄") then return end
+
+    local tool = Instance.new("Tool")
+    tool.Name = "Hexagon Emitter 🪄"
+    tool.RequiresHandle = true
+    
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(0.3, 2.5, 0.3)
+    handle.Material = Enum.Material.Neon
+    handle.Color = Color3.fromRGB(0, 255, 255)
+    handle.Anchored = false
+    handle.CanCollide = false
+    handle.Parent = tool
+    
+    local debounce = false
+    tool.Activated:Connect(function()
+        if debounce then return end
+        debounce = true
+        
+        local mouse = LocalPlayer:GetMouse()
+        local targetPos = mouse.Hit.Position
+        
+        local RE = getBrookhavenRE()
+        if RE then
+            pcall(function() RE:FireServer("SpawnParticle", "Hearts Blue", targetPos, Color3.fromRGB(0, 255, 255)) end)
+            pcall(function() RE:FireServer("Particle", "Hearts Blue", targetPos, Color3.fromRGB(0, 255, 255)) end)
+        end
+        
+        task.wait(0.15)
+        debounce = false
+    end)
+    tool.Parent = LocalPlayer.Backpack
+end
+
+-- ==========================================
+-- BÖLÜM 3: SÜRÜKLENEBİLİR TETİK BUTONU (GİZLİ)
 -- ==========================================
 local function createVIPQuickButton()
     local targetParent = (gethui and gethui()) or (pcall(function() return CoreGui end) and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
@@ -3436,15 +3478,15 @@ local function createVIPQuickButton()
 
     local MainButton = Instance.new("TextButton")
     MainButton.Name = "MainTrigger"
-    MainButton.Size = UDim2.new(0, 200, 0, 50)
-    MainButton.Position = UDim2.new(1, -220, 0.5, 0) -- Sağ kenarda başlar
-    MainButton.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-    MainButton.Text = "HEXAGON ULTIMATE 🚀"
+    MainButton.Size = UDim2.new(0, 220, 0, 50)
+    MainButton.Position = UDim2.new(1, -240, 0.5, 0)
+    MainButton.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    MainButton.Text = "HEXAGON UNLOCK ALL 💎"
     MainButton.TextColor3 = Color3.fromRGB(0, 255, 255)
     MainButton.Font = Enum.Font.GothamBold
-    MainButton.TextSize = 14
+    MainButton.TextSize = 13
     MainButton.Active = true
-    MainButton.Draggable = true -- Basit sürükleme (Byfron dostu)
+    MainButton.Draggable = true 
     MainButton.Parent = screenGui
     
     Instance.new("UICorner", MainButton).CornerRadius = UDim.new(0, 10)
@@ -3452,17 +3494,16 @@ local function createVIPQuickButton()
     stroke.Color = Color3.fromRGB(0, 255, 255)
     stroke.Thickness = 2
 
-    -- Tıklama: Tüm bypass'ları tetikle ve Remote'ları hazırla
     MainButton.MouseButton1Click:Connect(function()
         InitUltimateBypass()
+        GiveEmitterTool()
         local RE = getBrookhavenRE()
         if RE then
-            pcall(function() RE:FireServer(" Pelis", "Check") end) -- Sembolik tetikleme
+            pcall(function() RE:FireServer(" Pelis", "Check") end) 
         end
-        Notify("Tetiklendi", "Tüm sistemler 'Dex' modunda çalışıyor.")
     end)
 
-    -- Sürükleme Mantığı (Gelişmiş)
+    -- Akıcı sürükleme logiği
     local dragging, dragInput, dragStart, startPos
     MainButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -3484,6 +3525,6 @@ end
 
 -- Başlat
 createVIPQuickButton()
-Notify("Hazır", "Byfron Bypass Aktif. Sağdaki butonu sürükleyebilirsin.")
+Notify("Sistem", "Hexagon Full Byfron Bypass Aktif. Unkock Butonu Eklendi.")
 
 print("Xeno Hub başarıyla yüklendi!")
