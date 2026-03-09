@@ -3614,4 +3614,64 @@ end
 -- Sistemi Başlat
 createHexagonHub()
 Notify("Sistem Aktif", "Hexagon V6 (AdStore + Signal Hook) Yüklendi!")
+
+--[[
+    Tüm sistemleri birleştiren ana script.
+    UI görünürlüğünü, Chat taglerini ve Hız kontrollerini yönetir.
+]]
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+
+local GamepassController = require(ReplicatedStorage.Modules.Client.GamepassController)
+local Gamepasses = require(ReplicatedStorage.Modules.Shared.Gamepasses)
+local Settings = require(ReplicatedStorage.Modules.Shared.Game8Settings)
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- 1. Chat VIP Etiketi Sistemi (NewTextChatTesting dosyasından esinlenildi)
+TextChatService.OnIncomingMessage = function(message)
+    local properties = Instance.new("TextChatMessageProperties")
+    if message.TextSource then
+        local userId = message.TextSource.UserId
+        if GamepassController.IsPlayerOwned(userId, "VIP") then
+            properties.PrefixText = "<font color='#FFD700'>[VIP]</font> " .. message.PrefixText
+        end
+    end
+    return properties
+end
+
+-- 2. Hız Kontrolü (Sprint Sistemi)
+local function updateSpeed()
+    local humanoid = character:WaitForChild("Humanoid")
+    if GamepassController.IsOwned("VIP") then
+        humanoid.WalkSpeed = Settings.WalkSpeed.VIP_Sprint
+    else
+        humanoid.WalkSpeed = Settings.WalkSpeed.Default
+    end
+end
+
+-- 3. Gamepass'e Göre UI Görünürlüğü
+local function setupVisibility()
+    for _, uiElement in pairs(game.Workspace:GetDescendants()) do
+        if uiElement:IsA("BasePart") and uiElement:GetAttribute("RequiresGamepass") then
+            local passRequired = uiElement:GetAttribute("RequiresGamepass")
+            uiElement.Transparency = GamepassController.IsOwned(passRequired) and 0 or 1
+            uiElement.CanCollide = GamepassController.IsOwned(passRequired)
+        end
+    end
+end
+
+-- Başlatıcı
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    updateSpeed()
+end)
+
+setupVisibility()
+updateSpeed()
+
+print("Sistem başarıyla başlatıldı: Tam Sürüm Hazır.")
+
 print("Xeno Hub başarıyla yüklendi!")
