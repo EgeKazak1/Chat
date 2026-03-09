@@ -3290,18 +3290,30 @@ scriptsTab:AddButton({
 })
 
 --[[
-    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v5.0 - GOD TIER UNLOCK)
-    Özellikler: VIP + Premium + Tüm Gamepassler + Ads + DevProducts + Event Eşyaları
-    Korumalar: Byfron Bypass, Dex/Explorer Anti-Crash, FireServer Ban/Kick Bypass
+    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v4.0 - FULL UNLOCK)
+    Özellikler: VIP + Premium + Tüm Gamepassler (Estates, Themes, Vehicles, Props vb.)
+    Byfron Bypass, Hız Limitör İptali, Görünürlük Koruması (GamepassVisibility Bypass)
 ]]
 
 -- ==========================================
--- BÖLÜM 0: BYFRON/HYPERION, DEX/EXPLORER & ANTI-BAN KORUMASI
+-- BÖLÜM 0: BYFRON/HYPERION & ANTI-LAG KORUMASI
 -- ==========================================
 local ScriptContext = game:GetService("ScriptContext")
 local LogService = game:GetService("LogService")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
+
+-- Crash/Ban loglarını ve anti-cheat tespitlerini körelt (Byfron Stealth)
+pcall(function()
+    local getconnections = getconnections or function() return {} end
+    if ScriptContext then
+        for _, connection in pairs(getconnections(ScriptContext.Error)) do connection:Disable() end
+    end
+    if LogService then
+        for _, connection in pairs(getconnections(LogService.MessageOut)) do connection:Disable() end
+    end
+end)
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -3319,45 +3331,6 @@ local function Notify(title, text)
     end)
 end
 
--- 1. Crash/Ban loglarını ve anti-cheat tespitlerini körelt (Byfron & Dex Stealth)
-pcall(function()
-    local getconnections = getconnections or function() return {} end
-    if ScriptContext then
-        for _, connection in pairs(getconnections(ScriptContext.Error)) do connection:Disable() end
-    end
-    if LogService then
-        for _, connection in pairs(getconnections(LogService.MessageOut)) do connection:Disable() end
-    end
-end)
-
--- 2. Gelişmiş Metamethod Hook (__namecall) -> Kick & Ban Koruması
-pcall(function()
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
-    
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        
-        -- Oyundan atılmayı engelle (Kick Bypass)
-        if method == "Kick" or method == "kick" then 
-            return wait(9e9) 
-        end
-        
-        -- RemoteEvent (FireServer) üzerinden giden şüpheli Ban/Crash tetikleyicilerini engelle
-        if method == "FireServer" and self.Name == "RE" then
-            local args = {...}
-            local action = tostring(args[1])
-            if action:match("Ban") or action:match("Kick") or action:match("Crash") or action:match("Report") then
-                return -- Sunucuya gönderilmesini iptal et
-            end
-        end
-        
-        return oldNamecall(self, ...)
-    end)
-    setreadonly(mt, true)
-end)
-
 local function getBrookhavenRE()
     local RE = ReplicatedStorage:FindFirstChild("RE")
     if not RE then
@@ -3369,33 +3342,36 @@ local function getBrookhavenRE()
 end
 
 -- ==========================================
--- BÖLÜM 1: ULTIMATE GAMEPASS, ADS & PROPERTIES BYPASS
+-- BÖLÜM 1: ULTIMATE GAMEPASS & PROPERTIES BYPASS
 -- ==========================================
 local function InitUltimateBypass()
     local unlock = setreadonly or make_writeable or function() end
     local hookFunc = function() return true end -- Her şeye 'Evet/Sahip' yanıtı verecek kanca
     
-    -- 1. Modül Tarama (Tüm Kilitleri Aç: Gamepass, Ads, Events, DevProducts)
-    local modulesToHook = {
-        "GamepassController", "UnlockableController", "AdFeatures", 
-        "Purchasable", "ItemProvider", "VehicleController"
-    }
-
-    local function hookModule(module)
+    -- 1. GamepassController & UnlockableController Tarama (Tüm Kilitleri Aç)
+    -- Tüm modülleri tarayıp 'IsOwned', 'IsPlayerOwned' gibi korumaları pasifize ediyoruz.
+    for _, module in pairs(ReplicatedStorage:GetDescendants()) do
         if module:IsA("ModuleScript") then
-            for _, targetName in ipairs(modulesToHook) do
-                if module.Name == targetName then
-                    local success, reqModule = pcall(require, module)
-                    if success and type(reqModule) == "table" then
-                        unlock(reqModule, false)
-                        -- Tablodaki kontrol fonksiyonlarını manipüle et
-                        for k, v in pairs(reqModule) do
-                            if type(v) == "function" then
-                                local lowerK = string.lower(k)
-                                if lowerK:match("own") or lowerK:match("has") or lowerK:match("can") or lowerK:match("get") or lowerK:match("active") or lowerK:match("eligible") then
-                                    reqModule[k] = hookFunc
-                                end
-                            end
+            -- GamepassController Bypass (VIP, Premium, Themes, Disaster, Music vb.)
+            if module.Name == "GamepassController" then
+                local success, gpController = pcall(require, module)
+                if success and type(gpController) == "table" then
+                    unlock(gpController, false)
+                    gpController.IsPlayerOwned = hookFunc
+                    gpController.IsOwned = hookFunc
+                    gpController.HasPass = hookFunc
+                    -- GamepassVisibility modülü buradaki sonuçlara göre UI butonlarını (Props, Araç vb.) görünür yapar
+                end
+            end
+            
+            -- UnlockableController Bypass (Evler, Arsalar, Araçlar, Proplar)
+            if module.Name == "UnlockableController" then
+                local success, ucController = pcall(require, module)
+                if success and type(ucController) == "table" then
+                    unlock(ucController, false)
+                    for k, v in pairs(ucController) do
+                        if type(v) == "function" then 
+                            ucController[k] = hookFunc 
                         end
                     end
                 end
@@ -3403,13 +3379,8 @@ local function InitUltimateBypass()
         end
     end
 
-    -- Sadece ReplicatedStorage değil, exploit'in bellekteki tüm modüllerini tara
-    for _, module in pairs(ReplicatedStorage:GetDescendants()) do hookModule(module) end
-    pcall(function()
-        for _, module in pairs(getloadedmodules()) do hookModule(module) end
-    end)
-
     -- 2. Game8Settings Bypass (Hızlar, Bekleme Süreleri)
+    -- Araç hızı limiti, ev spawn süresi vb. tamamen kalkıyor
     task.spawn(function()
         for _, module in pairs(getloadedmodules and getloadedmodules() or {}) do
             if module.Name == "Game8Settings" then
@@ -3430,28 +3401,25 @@ local function InitUltimateBypass()
         end
     end)
     
-    -- 3. Zorunlu UI Görünürlük Kontrolü (Arayüz kilitlerini kaldır)
+    -- 3. Zorunlu UI Görünürlük Kontrolü (GamepassVisibility Failsafe)
     task.spawn(function()
         pcall(function()
             local pGui = LocalPlayer:WaitForChild("PlayerGui")
             for _, v in pairs(pGui:GetDescendants()) do
-                if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Locked" or v.Name == "Star") then
-                    v.Visible = false
-                end
-                if v:IsA("Frame") and v.Name == "PremiumBlock" then
+                -- Kilit ikonlarını gizle
+                if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Locked") then
                     v.Visible = false
                 end
             end
         end)
     end)
     
-    -- Fetched/Patched senkronizasyonu ("allpassfetched" Anti-Block)
+    -- Fetched/Patched senkronizasyonu
     pcall(function()
         if LocalPlayer:FindFirstChild("DataReady") then LocalPlayer.DataReady.Value = true end
-        if LocalPlayer:FindFirstChild("Loaded") then LocalPlayer.Loaded.Value = true end
     end)
 
-    Notify("GOD UNLOCK", "Ads, Event Eşyaları, Premium, VIP, Dex Bypass AKTİF!")
+    Notify("FULL UNLOCK", "Premium, VIP, Themes, Estates, Music, Props, Araçlar, Emitterler AKTİF!")
 end
 
 -- ==========================================
@@ -3557,6 +3525,5 @@ end
 
 -- Başlat
 createVIPQuickButton()
-Notify("Sistem", "Hexagon God Bypass Aktif. Unkock Butonu Eklendi.")
-
+Notify("Sistem", "Hexagon Full Byfron Bypass Aktif. Unkock Butonu Eklendi.")
 print("Xeno Hub başarıyla yüklendi!")
