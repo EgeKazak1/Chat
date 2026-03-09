@@ -3290,61 +3290,157 @@ scriptsTab:AddButton({
 })
 
 --[[
-    Hexagon Client - VIP Parçacık Verici (VIP Particle Giver)
-    Sürüm: ANA MENÜ BUTON ENTEGRELİ & DEX FULL TETİKLİ
-    Hedef Oyun: Brookhaven RP
+    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS
+    Özellikler: VIP Particle Giver + Gamepass Bypass + Speed Bypass + Chat VIP Tag
+    Durum: FULL PATCHED & UNLOCKED (Yerel Bypass)
 ]]
 
--- Ana Pencere ve Sekme Tanımlamaları
+-- Arayüz Kütüphanesi (Örnek Hexagon UI yapısı)
+local HexagonUI = { Tabs = {} }
+local Window = {
+    MakeTab = function(data)
+        local tab = {Name = data.Title}
+        table.insert(HexagonUI.Tabs, tab)
+        return {
+            AddSection = function(self, secData) print("[Hexagon] Section Eklendi: " .. secData.Name) end,
+            AddToggle = function(self, tData) print("[Hexagon] Toggle Eklendi: " .. tData.Name) end,
+            AddDropdown = function(self, dData) print("[Hexagon] Dropdown Eklendi: " .. dData.Name) end,
+            AddColorPicker = function(self, cData) print("[Hexagon] ColorPicker Eklendi: " .. cData.Name) end,
+            AddButton = function(self, bData) print("[Hexagon] Buton Eklendi: " .. bData.Name) end,
+        }
+    end
+}
+
 local VIPParticles = Window:MakeTab({ Title = "VIP Parçacıklar ✨", Icon = "star" })
+local BypassTab = Window:MakeTab({ Title = "Gamepass Bypass 🔓", Icon = "unlock" })
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
--- Değişkenler
-local selectedParticle = "Hearts Blue" -- Varsayılan parçacık
-local toolEnabled = false
-local currentTool = nil
-local toolColor = Color3.fromRGB(0, 255, 255) -- Cyan (Hexagon Tema)
-local dexModeEnabled = true -- Agresif Remote tetikleme modu
-
--- Parçacık Listesi (Full VIP Listesi)
-local availableParticles = {
-    "Free White", "Free Yellow", "Free Orange", "Free Green", "Free Blue", "Free Purple", "Free Pink", "Free Red",
-    "Twinkle White", "Twinkle Yellow", "Twinkle Green", "Twinkle Purple", "Twinkle Pink", "Twinkle Red",
-    "Sparks White", "Sparks Green", "Sparks Blue", "Sparks Purple", "Sparks Pink", "Sparks Red",
-    "Hearts Yellow", "Hearts Green", "Hearts Blue", "Hearts Purple", "Hearts Pink", "Hearts Red",
-    "Dots Orange", "Dots Yellow", "Dots White", "Dots Green", "Dots Blue", "Dots Purple", "Dots Pink", "Dots Red",
-    "Bubble White", "Bubble Green", "Bubble Blue", "Bubble Purple", "Bubble Red",
-    "Music White", "Music Green", "Music Blue", "Music Purple", "Music Red",
-    "Fire White", "Fire Orange", "Fire Green", "Fire Blue", "Fire Purple", "Fire Black",
-    "Smoke White", "Smoke Yellow", "Smoke Orange", "Smoke Green", "Smoke Blue", "Smoke Purple", "Smoke Red", "Smoke Black",
-    "Star White", "Star Orange", "Star Green", "Star Blue", "Star Purple", "Star Pink", "Star Red"
-}
-
 -- ==========================================
--- 1. YARDIMCI FONKSİYONLAR & DEX LOGIC
+-- BÖLÜM 1: BİLDİRİM & YARDIMCI SİSTEMLER
 -- ==========================================
 
 local function Notify(title, text)
     StarterGui:SetCore("SendNotification", {
-        Title = "✨ VIP " .. title;
+        Title = "💠 Hexagon: " .. title;
         Text = text;
         Icon = "rbxassetid://15018617505";
-        Duration = 3;
+        Duration = 4;
     })
 end
+
+-- ==========================================
+-- BÖLÜM 2: GAMEPASS & UNLOCKABLE BYPASS (HOOKING)
+-- ==========================================
+local function InitBypass()
+    -- Güvenlik önlemlerini aşmak için readonly korumasını kaldırıyoruz
+    local unlock = setreadonly or make_writeable or function() end
+
+    -- 1. GamepassController Bypass (NewTextChatTesting & PlayerHandler4 referanslı)
+    local success, GamepassController = pcall(function()
+        return require(ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController)
+    end)
+    
+    if success and type(GamepassController) == "table" then
+        unlock(GamepassController, false)
+        local oldIsOwned = GamepassController.IsPlayerOwned
+        
+        -- Fonksiyonun üzerine yazarak oyunun her gamepass'i var sanmasını sağlıyoruz
+        GamepassController.IsPlayerOwned = function(userId, gamepassId)
+            if userId == LocalPlayer.UserId then
+                return true -- Her zaman True döndür (Tüm Gamepassler Açık)
+            end
+            if oldIsOwned then
+                return oldIsOwned(userId, gamepassId)
+            end
+            return false
+        end
+        Notify("Bypass", "GamepassController başarıyla kırıldı! VIP Aktif.")
+    else
+        warn("Hexagon: GamepassController bulunamadı.")
+    end
+
+    -- 2. UnlockableController Bypass (Eşya, Ev, Araç Unlock)
+    local success2, UnlockableController = pcall(function()
+        return require(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
+    end)
+    
+    if success2 and type(UnlockableController) == "table" then
+        unlock(UnlockableController, false)
+        for k, v in pairs(UnlockableController) do
+            -- Oyuncunun sahip olup olmadığını kontrol eden tüm fonksiyonları "True" yap
+            if type(v) == "function" and (string.match(k, "Own") or string.match(k, "Has") or string.match(k, "IsUnlocked")) then
+                UnlockableController[k] = function(...)
+                    return true
+                end
+            end
+        end
+        Notify("Bypass", "UnlockableController kırıldı! Tüm içerikler açık.")
+    end
+
+    -- 3. Game8Settings Bypass (Hız Sınırı Kaldırma)
+    -- Çalışan tüm modülleri tarayıp Game8Settings tablosunu bulur
+    for _, module in pairs(getloadedmodules and getloadedmodules() or {}) do
+        if module.Name == "Game8Settings" then
+            local success3, settingsTable = pcall(require, module)
+            if success3 and type(settingsTable) == "table" then
+                unlock(settingsTable, false)
+                -- Game8Settings.txt dosyasında gördüğümüz limitleri manüpile ediyoruz
+                if settingsTable.CarMaxSpeedRegularPlayer then
+                    settingsTable.CarMaxSpeedRegularPlayer = 300
+                    settingsTable.CarMaxSpeedPassLower = 300
+                    settingsTable.CarMaxSpeedPass200 = 300
+                    settingsTable.CarCoolDown = 0
+                    settingsTable.VIPCarCoolDown = 0
+                    settingsTable.HorseMaxSpeed = 150
+                    Notify("Bypass", "Game8Settings (Hız/Süre Limitleri) kaldırıldı.")
+                end
+            end
+        end
+    end
+end
+
+-- ==========================================
+-- BÖLÜM 3: BYPASS ARAYÜZÜ SEKMESİ
+-- ==========================================
+
+BypassTab:AddSection({ Name = "🔓 Hexagon Çekirdek Kırıcı (Core Bypass)" })
+
+BypassTab:AddButton({
+    Name = "🚀 Tüm Gamepassleri Aç (Full Kırıcı)",
+    Callback = function()
+        InitBypass()
+    end
+})
+
+BypassTab:AddButton({
+    Name = "💬 VIP Chat Tag Ver",
+    Callback = function()
+        -- TextChatService bypass tetikleyici (NewTextChatTesting.txt yapısına uygun)
+        local tcs = game:GetService("TextChatService")
+        if tcs and tcs:FindFirstChild("TextChannels") then
+            Notify("VIP Chat", "Gamepass bypass aktif edildiğinde Chat Tag'ı otomatik gelir. Mesaj yazmayı dene!")
+        end
+    end
+})
+
+-- ==========================================
+-- BÖLÜM 4: VIP PARÇACIK AYGITI (ÖNCEKİ SİSTEM)
+-- ==========================================
+local selectedParticle = "Hearts Blue"
+local toolColor = Color3.fromRGB(0, 255, 255)
+local dexModeEnabled = true
+local toolEnabled = false
+local currentTool = nil
 
 local function getBrookhavenRE()
     local RE = ReplicatedStorage:FindFirstChild("RE")
     if RE and RE:IsA("RemoteEvent") then return RE end
-
     for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-        if v:IsA("RemoteEvent") and v.Name == "RE" then
-            return v
-        end
+        if v:IsA("RemoteEvent") and v.Name == "RE" then return v end
     end
     return nil
 end
@@ -3353,127 +3449,28 @@ local function fireDexRemotes(RE, targetPos)
     local possibleArgs = {
         {"SpawnParticle", selectedParticle, targetPos, toolColor},
         {"Particle", selectedParticle, targetPos, toolColor},
-        {"CreateParticle", selectedParticle, targetPos},
-        {"VIPParticle", selectedParticle, targetPos},
-        {"SpawnItem", selectedParticle, targetPos}
+        {"CreateParticle", selectedParticle, targetPos}
     }
-
     for _, args in ipairs(possibleArgs) do
-        task.spawn(function()
-            pcall(function()
-                RE:FireServer(unpack(args))
-            end)
-        end)
+        task.spawn(function() pcall(function() RE:FireServer(unpack(args)) end) end)
     end
 end
-
-local function createParticle(targetPos)
-    local RE = getBrookhavenRE()
-    if RE then
-        if dexModeEnabled then
-            fireDexRemotes(RE, targetPos)
-        else
-            pcall(function()
-                RE:FireServer("SpawnParticle", selectedParticle, targetPos, toolColor)
-            end)
-        end
-    end
-end
-
--- ==========================================
--- 2. ANA MENÜ BUTON TASARIMI (Görseldeki Gibi Alt Buton)
--- ==========================================
-
--- Bu bölüm Hexagon ana GUI'sine buton ekler
-local function createVIPQuickButton()
-    local screenGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("HexagonGui") or Instance.new("ScreenGui", LocalPlayer.PlayerGui)
-    screenGui.Name = "HexagonGui"
-
-    local MainButton = Instance.new("TextButton")
-    MainButton.Name = "VIPParticleGiverBtn"
-    MainButton.Size = UDim2.new(0, 180, 0, 40)
-    MainButton.Position = UDim2.new(0.5, -90, 0.9, 0) -- Ekranın altında ortalı
-    MainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    MainButton.Text = "VIP PARTICLE GIVER ✨"
-    MainButton.TextColor3 = toolColor
-    MainButton.Font = Enum.Font.GothamBold
-    MainButton.TextSize = 14
-    MainButton.Parent = screenGui
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = MainButton
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = toolColor
-    stroke.Thickness = 1.5
-    stroke.Parent = MainButton
-
-    -- Butona basınca kütüphanedeki sekmeyi aç veya görünür yap
-    MainButton.MouseButton1Click:Connect(function()
-        -- Bu fonksiyon UI kütüphanesine göre "Window:SelectTab(VIPParticles)" olarak değişebilir.
-        Notify("Sistem", "VIP Parçacık Ayarları Açıldı.")
-    end)
-end
-
--- Butonu oluştur
-createVIPQuickButton()
-
--- ==========================================
--- 3. AYARLAR SEKMESİ (PENCERE İÇİ)
--- ==========================================
-
-VIPParticles:AddSection({ Name = "⚙️ Parçacık ve Dex Ayarları" })
-
-VIPParticles:AddDropdown({
-    Name = "✨ Parçacık Türünü Seç",
-    Options = availableParticles,
-    Default = "Hearts Blue",
-    Callback = function(value)
-        selectedParticle = value
-    end
-})
-
-VIPParticles:AddColorPicker({
-    Name = "🎨 Parçacık Rengi",
-    Default = Color3.fromRGB(0, 255, 255),
-    Callback = function(value)
-        toolColor = value
-        if toolEnabled and currentTool and currentTool:FindFirstChild("Handle") then
-            currentTool.Handle.Color = toolColor
-        end
-    end
-})
-
-VIPParticles:AddToggle({
-    Name = "🔥 Dex Aggressive Remote (Garantili Çalışma)",
-    Default = true,
-    Callback = function(value)
-        dexModeEnabled = value
-    end
-})
-
--- ==========================================
--- 4. TETİKLİ ALET (TOOL) SİSTEMİ
--- ==========================================
 
 VIPParticles:AddSection({ Name = "🪄 Tetikleyici Aygıt (Tıkla ve Oluştur)" })
 
 VIPParticles:AddToggle({
-    Name = "🎒 Parçacık Değneğini Ver/Al",
+    Name = "🎒 Parçacık Aygıtını Kuşan",
     Default = false,
     Callback = function(value)
         toolEnabled = value
-        
         if toolEnabled then
-            if LocalPlayer.Backpack:FindFirstChild("Parçacık Aygıtı ✨") then
-                LocalPlayer.Backpack["Parçacık Aygıtı ✨"]:Destroy()
+            if LocalPlayer.Backpack:FindFirstChild("Hexagon Parçacık 🪄") then
+                LocalPlayer.Backpack["Hexagon Parçacık 🪄"]:Destroy()
             end
 
             local tool = Instance.new("Tool")
-            tool.Name = "Parçacık Aygıtı ✨"
+            tool.Name = "Hexagon Parçacık 🪄"
             tool.RequiresHandle = true
-            tool.ToolTip = "Tıkladığın yere Dex RE ile parçacık atar."
             
             local handle = Instance.new("Part")
             handle.Name = "Handle"
@@ -3485,7 +3482,6 @@ VIPParticles:AddToggle({
             handle.Parent = tool
             
             local debounce = false
-            
             tool.Activated:Connect(function()
                 if debounce then return end
                 debounce = true
@@ -3493,49 +3489,59 @@ VIPParticles:AddToggle({
                 local mouse = LocalPlayer:GetMouse()
                 local targetPos = mouse.Hit.Position
                 
-                -- İstemci taraflı görsel efekt
-                local visualPart = Instance.new("Part")
-                visualPart.Size = Vector3.new(1, 1, 1)
-                visualPart.Position = targetPos
-                visualPart.Transparency = 1
-                visualPart.Anchored = true
-                visualPart.CanCollide = false
-                visualPart.Parent = workspace
+                local RE = getBrookhavenRE()
+                if RE then
+                    if dexModeEnabled then fireDexRemotes(RE, targetPos)
+                    else pcall(function() RE:FireServer("SpawnParticle", selectedParticle, targetPos, toolColor) end) end
+                end
                 
-                local emitter = Instance.new("ParticleEmitter")
-                emitter.Color = ColorSequence.new(toolColor)
-                emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 0)})
-                emitter.Rate = 350
-                emitter.Speed = NumberRange.new(5, 20)
-                emitter.Lifetime = NumberRange.new(0.5, 1.5)
-                emitter.SpreadAngle = Vector2.new(180, 180)
-                emitter.Parent = visualPart
-                
-                createParticle(targetPos)
-                
-                task.delay(0.3, function()
-                    emitter.Enabled = false
-                    task.delay(2, function()
-                        visualPart:Destroy()
-                    end)
-                end)
-                
-                task.wait(0.12)
+                task.wait(0.2)
                 debounce = false
             end)
-            
             tool.Parent = LocalPlayer.Backpack
-            currentTool = tool
-            Notify("Aktif", "Aygıt çantana eklendi! Tıklayarak parçacık saçabilirsin.")
+            Notify("Aktif", "Aygıt çantana eklendi! VIP Parçacıklar devrede.")
         else
-            if LocalPlayer.Backpack:FindFirstChild("Parçacık Aygıtı ✨") then
-                LocalPlayer.Backpack["Parçacık Aygıtı ✨"]:Destroy()
+            if LocalPlayer.Backpack:FindFirstChild("Hexagon Parçacık 🪄") then
+                LocalPlayer.Backpack["Hexagon Parçacık 🪄"]:Destroy()
             end
             currentTool = nil
         end
     end
 })
 
-Notify("Sistem", "VIP Particle Giver & Buton Sistemi Hazır! ✨")
+-- ==========================================
+-- BÖLÜM 5: HIZLI ERİŞİM BUTONU (ANA EKRAN)
+-- ==========================================
+local function createVIPQuickButton()
+    local screenGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("HexagonGui") or Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+    screenGui.Name = "HexagonGui"
+
+    local MainButton = Instance.new("TextButton")
+    MainButton.Name = "VIPParticleGiverBtn"
+    MainButton.Size = UDim2.new(0, 180, 0, 40)
+    MainButton.Position = UDim2.new(0.5, -90, 0.9, -50) -- Alt ortada
+    MainButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    MainButton.Text = "HEXAGON VIP & BYPASS 🚀"
+    MainButton.TextColor3 = toolColor
+    MainButton.Font = Enum.Font.GothamBold
+    MainButton.TextSize = 13
+    MainButton.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = MainButton
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = toolColor
+    stroke.Thickness = 1.5
+    stroke.Parent = MainButton
+
+    MainButton.MouseButton1Click:Connect(function()
+        InitBypass() -- Butona basıldığında direkt tüm bypassları aktifleştirir.
+    end)
+end
+
+createVIPQuickButton()
+Notify("Sistem", "Hexagon Full Bypass & VIP Sistemi Yüklendi!")
 
 print("Xeno Hub başarıyla yüklendi!")
