@@ -3593,14 +3593,6 @@ local function createHexagonHub()
         InjectGamepassesAndAdStore()
     end)
     
-    -- Buton 3: Dex Explorer
-    createButton("📂 DEX EXPLORER AÇ", 3, function()
-        Notify("Yükleniyor", "Dark Dex Explorer başlatılıyor...")
-        task.spawn(function()
-            pcall(function() end)
-        end)
-    end)
-    
     -- Buton 4: Remote Spy (FireServer İzleyici)
     createButton("📡 REMOTE SPY (FireServer)", 4, function()
         Notify("Yükleniyor", "SimpleSpy (Remote izleyici) başlatılıyor...")
