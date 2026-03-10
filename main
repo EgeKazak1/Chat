@@ -3290,130 +3290,228 @@ scriptsTab:AddButton({
 })
 
 --[[
-    ULTIMATE ALL-ACCESS & HYPERION BYPASS SCRIPT
-    
-    Kapsam:
-    - Hyperion (Byfron) & Maxy Anticheat Bypass
-    - Tüm Gamepass & VIP İçerikleri (GamepassController & Gamepasses.txt)
-    - Premium Araç Kontrolleri & Hız Sınırı Kaldırma (Game8Settings.txt)
-    - Temalar, Evler ve Gizli Menülerin Açılması (ThemesMenu.txt)
-    - Remote Event Manipülasyonu (FireServer/Remotes)
+    HEXAGON ULTIMATE GOD PANEL v5.5 (BROOKHAVEN SPECIAL)
+    Byfron/Hyperion Stealth + Voldex Patch Bypass
+    Target: EgeKazak_Real1
 ]]
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 
--- 1. [HYPERION / MAXY BYPASS] 
--- Anticheat sistemlerinin namecall ve hook metodlarını manipüle eder.
-if getgenv and hookmetatable then
-    local oldNamecall
-    oldNamecall = hookmetatable(game, {
-        __namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            -- Anticheat remote'larını sustur (Maxy/Byfron tespiti için)
-            if method == "FireServer" and (tostring(self):find("Anticheat") or tostring(self):find("1Max")) then
+local LocalPlayer = Players.LocalPlayer
+local TARGET_NAME = "EgeKazak_Real1"
+
+-- ==========================================
+-- GÜVENLİK VE BYPASS MOTORU
+-- ==========================================
+local function InitialBypass()
+    -- Byfron & Anti-Cheat Shield
+    local mt = getrawmetatable(game)
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
+
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+
+        if method == "FireServer" and self.Name == "RE" then
+            local action = tostring(args[1])
+            -- Tehlikeli sinyalleri sustur
+            if action:match("Ban") or action:match("Kick") or action:match("Log") or action:match("Check") then
                 return nil 
             end
-            
-            -- Teleport veya hız tespiti yapan invoke'ları engelle
-            if method == "InvokeServer" and tostring(self):find("Check") then
-                return wait(9e9) 
+        end
+        if method == "Kick" then return task.wait(9e9) end
+        return oldNamecall(self, ...)
+    end)
+    setreadonly(mt, true)
+
+    -- Modül Yamaları (Voldex & Gamepass)
+    task.spawn(function()
+        local hookTrue = function() return true end
+        for _, module in pairs(getloadedmodules()) do
+            -- Sahiplik Kontrolleri
+            if module.Name == "GamepassController" or module.Name == "UnlockableController" then
+                local s, mod = pcall(require, module)
+                if s and type(mod) == "table" then
+                    mod.IsPlayerOwned = hookTrue
+                    mod.IsOwned = hookTrue
+                    mod.HasPass = hookTrue
+                    mod.CanAccess = hookTrue
+                end
             end
-            
-            return oldNamecall(self, ...)
+            -- Araç ve Ayar Yamaları
+            if module.Name == "AdFeatures" or module.Name == "Game8Settings" then
+                local s, mod = pcall(require, module)
+                if s and type(mod) == "table" then
+                    if mod.Vehicles then
+                        local oldV = mod.Vehicles
+                        mod.Vehicles = function(...)
+                            local v = oldV(...)
+                            for _, car in pairs(v) do car.gamepass = nil end
+                            return v
+                        end
+                    end
+                    mod.AllPassFetched = true
+                    mod.CarMaxSpeedPass200 = 450
+                    mod.CarCoolDown = 0
+                    mod.VIPCarCoolDown = 0
+                end
+            end
+        end
+    end)
+end
+
+-- ==========================================
+-- MODERN GOD PANEL ARAYÜZÜ
+-- ==========================================
+local function CreateGodPanel()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "HexagonGodPanel"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = (gethui and gethui()) or CoreGui
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 300, 0, 380)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.4, -190)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true -- Klasik sürükleme
+    MainFrame.Parent = screenGui
+
+    -- Tasarım: Köşeler ve Çerçeve
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+    local stroke = Instance.new("UIStroke", MainFrame)
+    stroke.Color = Color3.fromRGB(0, 255, 255)
+    stroke.Thickness = 2
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 45)
+    Title.BackgroundTransparency = 1
+    Title.Text = "HEXAGON GOD PANEL v5.5"
+    Title.TextColor3 = Color3.fromRGB(0, 255, 255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 16
+    Title.Parent = MainFrame
+
+    local SubTitle = Instance.new("TextLabel")
+    SubTitle.Size = UDim2.new(1, 0, 0, 20)
+    SubTitle.Position = UDim2.new(0, 0, 0, 35)
+    SubTitle.BackgroundTransparency = 1
+    SubTitle.Text = "Kullanıcı: " .. TARGET_NAME
+    SubTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+    SubTitle.Font = Enum.Font.Gotham
+    SubTitle.TextSize = 11
+    SubTitle.Parent = MainFrame
+
+    local List = Instance.new("ScrollingFrame")
+    List.Size = UDim2.new(1, -20, 1, -80)
+    List.Position = UDim2.new(0, 10, 0, 70)
+    List.BackgroundTransparency = 1
+    List.CanvasSize = UDim2.new(0, 0, 0, 500)
+    List.ScrollBarThickness = 2
+    List.Parent = MainFrame
+
+    local layout = Instance.new("UIListLayout", List)
+    layout.Padding = UDim.new(0, 8)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    -- Buton Oluşturucu Fonksiyon
+    local function CreateButton(txt, callback)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 260, 0, 40)
+        btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        btn.Text = txt
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamMedium
+        btn.TextSize = 13
+        btn.AutoButtonColor = true
+        btn.Parent = List
+        
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        local s = Instance.new("UIStroke", btn)
+        s.Color = Color3.fromRGB(40, 40, 60)
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        btn.MouseButton1Click:Connect(function()
+            callback()
+            btn.BackgroundColor3 = Color3.fromRGB(0, 100, 100)
+            task.wait(0.2)
+            btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
         end)
-    })
-    getgenv().Hyperion_Bypass = true
-    getgenv().Maxy_Bypass = true
-end
-
--- 2. [GAMEPASS & VIP BYPASS]
--- GamepassController.txt ve Gamepasses.txt verilerine dayanarak tüm kilitleri açar.
-local function bypassGamepasses()
-    local GPCPath = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Client"):WaitForChild("UI"):WaitForChild("Gamepass"):WaitForChild("GamepassController")
-    local GPC = require(GPCPath)
-    
-    if GPC and GPC.IsOwned then
-        -- Tüm gamepass sorgularına true döndür
-        GPC.IsOwned = function() return true end
     end
-    
-    -- Gift ve Name sorgularını da manipüle et
-    local Gamepasses = require(ReplicatedStorage.Modules.Shared.PlayerData.Gamepasses)
-    if Gamepasses then
-        Gamepasses.GetName = function(id) return "Unlocked Premium" end
-        Gamepasses.GiftExists = function() return true end
-    end
-    print("[SUCCESS] Tüm Gamepass ve VIP kilitleri bypass edildi.")
-end
-task.spawn(bypassGamepasses)
 
--- 3. [VEHICLE & SPEED BYPASS]
--- Game8Settings.txt içindeki tüm hız limitlerini ve bekleme sürelerini sıfırlar.
-local function bypassSettings()
-    -- ReplicatedStorage içindeki Game8Settings modülünü bulur
-    for _, v in pairs(game:GetDescendants()) do
-        if v.Name == "Game8Settings" and v:IsA("ModuleScript") then
-            local Settings = require(v)
-            Settings.CarMaxSpeedRegularPlayer = 9999
-            Settings.CarMaxSpeedPass200 = 9999
-            Settings.CarMaxSpeedPassLower = 9999
-            Settings.VIPCarCoolDown = 0
-            Settings.CarCoolDown = 0
-            Settings.HorseMaxSpeed = 500
-            print("[SUCCESS] Araç hız limitleri ve cooldownlar kaldırıldı.")
+    -- ÖZELLİKLER
+    CreateButton("FULL BYPASS AKTİF ET (BYFRON)", function()
+        InitialBypass()
+        StarterGui:SetCore("SendNotification", {Title = "Sistem", Text = "Bypass Motoru Yüklendi!", Duration = 3})
+    end)
+
+    CreateButton("PREMIUM & VIP KİLİTLERİ AÇ", function()
+        pcall(function()
+            local data = ReplicatedStorage:FindFirstChild("PlayerData")
+            if data and data:FindFirstChild(LocalPlayer.Name) then
+                local passes = data[LocalPlayer.Name]:FindFirstChild("Gamepasses")
+                if passes then
+                    for _, v in pairs(passes:GetChildren()) do v.Value = true end
+                end
+                data[LocalPlayer.Name].VIP.Value = true
+                data[LocalPlayer.Name].Premium.Value = true
+            end
+        end)
+        -- UI Kilitlerini Temizle
+        for _, v in pairs(LocalPlayer.PlayerGui:GetDescendants()) do
+            if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Star") then v.Visible = false end
         end
-    end
-end
-task.spawn(bypassSettings)
+    end)
 
--- 4. [PREMIUM CONTROLS & THEMES]
--- VehiclePremiumControlsButton.txt ve ThemesMenu.txt mantığını kullanarak gizli panelleri açar.
-local function unlockInterfaces()
-    -- Araç premium panellerini görünür kıl (Tag ekleyerek)
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("ObjectValue") and v.Name == "Panel" then
-            pcall(function()
-                v.Parent:AddTag("Panel")
-            end)
+    CreateButton("MAX HIZ & NO COOLDOWN", function()
+        -- Hız limitlerini zorla
+        task.spawn(function()
+            while task.wait(1) do
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    char.Humanoid.WalkSpeed = 32
+                end
+            end
+        end)
+    end)
+
+    CreateButton("RAINBOW CHAT & VIP TAG", function()
+        local RE = ReplicatedStorage:FindFirstChild("RE")
+        if RE then
+            pcall(function() RE:FireServer("Pelis", "Check") end)
+            pcall(function() RE:FireServer("UpdateChatTags", {TagText = "GOD", TagColor = "#00FFFF"}) end)
         end
-    end
-    
-    -- Temalar ve Evler için kilitli durumları kaldır
-    local Unlockable = require(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
-    if Unlockable then
-        Unlockable.IsUnlocked = function() return true end
-    end
-end
-task.spawn(unlockInterfaces)
+    end)
 
--- 5. [REMOTE CONNECTION & COMMANDS]
--- FireServer bağlantılı komutlar ve Remote Event yöneticisi.
-local RemoteManager = {
-    RE = ReplicatedStorage:FindFirstChild("RE"),
-    Fire = function(self, name, ...)
-        if self.RE and self.RE:FindFirstChild(name) then
-            self.RE[name]:FireServer(...)
+    CreateButton("TÜM ARSALARI/EVLERİ AÇ (ESTATES)", function()
+        -- Estates & Themes Unlocker
+        pcall(function()
+            local module = ReplicatedStorage.Modules.Client.PlayerData.UnlockableController
+            local mod = require(module)
+            mod.IsOwned = function() return true end
+        end)
+    end)
+
+    CreateButton("PANELİ GİZLE (L tuşu ile geri aç)", function()
+        MainFrame.Visible = false
+    end)
+
+    -- Kısayol Tuşu (L)
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == Enum.KeyCode.L then
+            MainFrame.Visible = not MainFrame.Visible
         end
-    end
-}
+    end)
+end
 
--- Bağlantılı Komut Örnekleri (Kullanım: RemoteManager:Fire("RemoteAdı", args))
-task.spawn(function()
-    -- Sunucuya tüm gamepasslerin sahip olunduğunu "bağlantılı komut" olarak bildir
-    RemoteManager:Fire("1Gam1ePas1sServe1r", "ValidateAll")
-    -- Hız paketini aktif et
-    RemoteManager:Fire("1Faste1r", true)
-end)
-
-print("------------------------------------------")
-print("   ULTIMATE BYPASS LOADED SUCCESSFULLY    ")
-print("   HYPERION: BYPASSED | MAXY: BYPASSED   ")
-print("   ALL PREMIUM CONTENT: UNLOCKED          ")
-print("------------------------------------------")
-
+-- Başlat
+CreateGodPanel()
+print("Hexagon God Panel v5.5 Başlatıldı - L tuşu ile paneli açıp kapatabilirsin.")
 print("Xeno Hub başarıyla yüklendi!")
