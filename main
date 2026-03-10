@@ -3290,10 +3290,11 @@ scriptsTab:AddButton({
 })
 
 --[[
-    💠 HEXAGON OMNIPOTENCE SUPREME (DRAGGABLE & LEAK INTEGRATED) 💠
-    - Hareket ettirilebilir (Draggable) modern UI.
-    - ShopAndFeatured, RemoteConfig ve PanelController entegrasyonu.
-    - Tüm kilitler açık (Houses, Cars, Gamepasses).
+    💠 HEXAGON OMNIPOTENCE - XENO HUB EDITION 💠
+    - Tam Sürükle-Bırak (Draggable) Desteği
+    - "Gamepasses" Sekmesi: Tüm Premium Kilitleri Açar
+    - "Info" Sekmesi: Discord Entegrasyonu
+    - Sızdırılan Modül Bypassları (Houses, Cars, Gamepasses)
 ]]
 
 if not game:IsLoaded() then game.Loaded:Wait() end
@@ -3304,118 +3305,237 @@ local UserInputService = game:GetService("UserInputService")
 local lp = Players.LocalPlayer
 
 -- ==========================================
--- SIZDIRILAN MODÜL ENTEGRASYONLARI
+-- MODÜL BYPASS SİSTEMİ (MODÜL MANİPÜLASYONU)
 -- ==========================================
-local function SafeRequire(path)
-    local success, result = pcall(require, path)
-    return success and result or nil
-end
-
--- Bypass Fonksiyonları (Önceki decompile verilerine dayanarak)
-local function ActivateBypasses()
-    -- Gamepass & Unlockable Bypass
-    local GC = SafeRequire(ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController)
-    local UC = SafeRequire(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
-    if GC then GC.IsOwned = function() return true end end
-    if UC then UC.IsFeatureUnlocked = function() return true end end
-    
-    -- Network Bypass
-    local RemoteConfig = SafeRequire(ReplicatedStorage:FindFirstChild("RemoteConfig", true))
-    if RemoteConfig then
-        for i, v in pairs(RemoteConfig) do
-            if type(v) == "function" then RemoteConfig[i] = function() return true end end
+local function GetModule(name)
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v:IsA("ModuleScript") and v.Name == name then
+            return require(v)
         end
     end
-    print("[HEXAGON] Tüm bypasslar aktif edildi.")
+    return nil
+end
+
+local function UnlockEverything()
+    -- 1. Gamepass Denetleyicisi
+    local GC = GetModule("GamepassController")
+    if GC then
+        GC.IsOwned = function() return true end
+        print("[HEX] GamepassController Bypass Edildi.")
+    end
+
+    -- 2. Unlockable Denetleyicisi (Evler ve Özellikler)
+    local UC = GetModule("UnlockableController")
+    if UC then
+        UC.IsFeatureUnlocked = function() return true end
+        if UC.GetFeatureUnlockState then
+            local MockState = { HasAccess = function() return true end, IsPermanent = function() return true end }
+            UC.GetFeatureUnlockState = function() return MockState end
+        end
+        print("[HEX] UnlockableController Bypass Edildi.")
+    end
+
+    -- 3. Araç Kontrolleri
+    local VC = GetModule("VehicleController")
+    if VC then
+        -- Araç hız limitlerini veya premium gereksinimlerini burada bozabiliriz
+        print("[HEX] VehicleController Tanımlandı.")
+    end
 end
 
 -- ==========================================
--- HAREKETLİ (DRAGGABLE) UI OLUŞTURMA
+-- UI OLUŞTURMA (MODERN & DRAGGABLE)
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HexagonDraggableUI"
+ScreenGui.Name = "XenoHexagonUI"
 ScreenGui.Parent = lp.PlayerGui
 ScreenGui.ResetOnSpawn = false
 
--- Ana Buton (Yüzen Buton)
-local MainButton = Instance.new("TextButton")
-MainButton.Name = "MainButton"
-MainButton.Parent = ScreenGui
-MainButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainButton.BorderSizePixel = 0
-MainButton.Position = UDim2.new(0.5, -25, 0.1, 0)
-MainButton.Size = UDim2.new(0, 50, 0, 50)
-MainButton.Font = Enum.Font.GothamBold
-MainButton.Text = "HEX"
-MainButton.TextColor3 = Color3.fromRGB(0, 255, 255)
-MainButton.TextSize = 14
-MainButton.AutoButtonColor = false
-MainButton.ClipsDescendants = true
+-- Ana Pencere (Gizli/Açık Durumu)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 450, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -225, 0.4, -150)
+MainFrame.Visible = false
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 255)
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(1, 0) -- Tam yuvarlak
-Corner.Parent = MainButton
+-- Sürüklenebilir Başlık Çubuğu
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.BackgroundTransparency = 1
 
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(0, 255, 255)
-Stroke.Thickness = 2
-Stroke.Parent = MainButton
+local TitleText = Instance.new("TextLabel")
+TitleText.Parent = TitleBar
+TitleText.Size = UDim2.new(1, -10, 1, 0)
+TitleText.Position = UDim2.new(0, 10, 0, 0)
+TitleText.Text = "HEXAGON OMNIPOTENCE v3 - XENO HUB"
+TitleText.TextColor3 = Color3.fromRGB(0, 255, 255)
+TitleText.Font = Enum.Font.GothamBold
+TitleText.TextSize = 14
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Sürükleme Mantığı (Draggable Logic)
-local dragging
-local dragInput
-local dragStart
-local startPos
+-- Sekme Sistemi (Tab System)
+local TabButtons = Instance.new("Frame")
+TabButtons.Parent = MainFrame
+TabButtons.Position = UDim2.new(0, 5, 0, 35)
+TabButtons.Size = UDim2.new(0, 100, 1, -40)
+TabButtons.BackgroundTransparency = 1
 
-local function update(input)
-	local delta = input.Position - dragStart
-	MainButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+local ContentArea = Instance.new("Frame")
+ContentArea.Parent = MainFrame
+ContentArea.Position = UDim2.new(0, 110, 0, 35)
+ContentArea.Size = UDim2.new(1, -115, 1, -45)
+ContentArea.BackgroundTransparency = 1
+
+local function CreateTab(name, isDefault)
+    local btn = Instance.new("TextButton")
+    btn.Parent = TabButtons
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 12
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    
+    local page = Instance.new("ScrollingFrame")
+    page.Parent = ContentArea
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.Visible = isDefault or false
+    page.ScrollBarThickness = 2
+    
+    local layout = Instance.new("UIListLayout", page)
+    layout.Padding = UDim.new(0, 5)
+
+    btn.MouseButton1Click:Connect(function()
+        for _, p in pairs(ContentArea:GetChildren()) do p.Visible = false end
+        page.Visible = true
+    end)
+    
+    return page
 end
 
-MainButton.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = MainButton.Position
-		
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
+-- --- GAMEPASSES SEKMESİ ---
+local gamepassesTab = CreateTab("Gamepasses 💎", true)
+
+local function AddButton(parent, text, callback)
+    local b = Instance.new("TextButton")
+    b.Parent = parent
+    b.Size = UDim2.new(1, -10, 0, 35)
+    b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    b.TextColor3 = Color3.fromRGB(0, 255, 255)
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 13
+    Instance.new("UICorner", b)
+    b.MouseButton1Click:Connect(callback)
+end
+
+AddButton(gamepassesTab, "Tüm Kilitleri Aç (Full Unlock)", function()
+    UnlockEverything()
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title="BAŞARILI", Text="Tüm evler ve araçlar açıldı!", Duration=3})
 end)
 
-MainButton.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
+AddButton(gamepassesTab, "Premium Araç Yetkisi", function()
+    local UC = GetModule("UnlockableController")
+    if UC then UC.IsFeatureUnlocked = function() return true end end
+end)
+
+-- --- INFO SEKMESİ ---
+local infoTab = CreateTab("Bilgi 💎")
+
+-- Discord Davet Tasarımı
+local discordFrame = Instance.new("Frame")
+discordFrame.Parent = infoTab
+discordFrame.Size = UDim2.new(1, -10, 0, 100)
+discordFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+Instance.new("UICorner", discordFrame)
+
+local discordTitle = Instance.new("TextLabel")
+discordTitle.Parent = discordFrame
+discordTitle.Text = "XENO HUB"
+discordTitle.Size = UDim2.new(1, 0, 0, 30)
+discordTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+discordTitle.Font = Enum.Font.GothamBold
+discordTitle.BackgroundTransparency = 1
+
+local discordDesc = Instance.new("TextLabel")
+discordDesc.Parent = discordFrame
+discordDesc.Position = UDim2.new(0, 0, 0, 30)
+discordDesc.Size = UDim2.new(1, 0, 0, 30)
+discordDesc.Text = "https://discord.gg/FxQzXqzH"
+discordDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
+discordDesc.BackgroundTransparency = 1
+
+local inviteBtn = Instance.new("TextButton")
+inviteBtn.Parent = discordFrame
+inviteBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
+inviteBtn.Size = UDim2.new(0, 150, 0, 25)
+inviteBtn.Text = "Daveti Kopyala"
+inviteBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+inviteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", inviteBtn)
+inviteBtn.MouseButton1Click:Connect(function()
+    setclipboard("https://discord.gg/FxQzXqzH")
+end)
+
+-- ==========================================
+-- SÜRÜKLENEBİLİR "HEX" BUTONU
+-- ==========================================
+local FloatingButton = Instance.new("TextButton")
+FloatingButton.Name = "FloatingHex"
+FloatingButton.Parent = ScreenGui
+FloatingButton.Size = UDim2.new(0, 50, 0, 50)
+FloatingButton.Position = UDim2.new(0.1, 0, 0.1, 0)
+FloatingButton.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+FloatingButton.Text = "HEX"
+FloatingButton.TextColor3 = Color3.fromRGB(0, 255, 255)
+FloatingButton.Font = Enum.Font.GothamBold
+Instance.new("UICorner", FloatingButton).CornerRadius = UDim.new(1, 0)
+local btnStroke = Instance.new("UIStroke", FloatingButton)
+btnStroke.Color = Color3.fromRGB(0, 255, 255)
+btnStroke.Thickness = 2
+
+-- Sürükleme Mantığı
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    FloatingButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+FloatingButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = FloatingButton.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+FloatingButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
+    if input == dragInput and dragging then update(input) end
 end)
 
--- Tıklama Efekti ve Menü Tetikleyici
-MainButton.MouseButton1Click:Connect(function()
-    -- Görsel geri bildirim
-    MainButton.Text = "AKTİF"
-    Stroke.Color = Color3.fromRGB(255, 0, 255)
-    
-    -- Bypass'ları çalıştır
-    ActivateBypasses()
-    
-    task.wait(1)
-    MainButton.Text = "HEX"
-    Stroke.Color = Color3.fromRGB(0, 255, 255)
+-- Menü Aç/Kapat
+FloatingButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
 end)
 
--- Başlangıç Bildirimi
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "HEXAGON DRAGGABLE",
-    Text = "Butonu istediğin yere sürükleyebilirsin!",
-    Duration = 5
-})
+print("[HEX] XENO HUB EDITION Yüklendi!")
+
 print("Xeno Hub başarıyla yüklendi!")
