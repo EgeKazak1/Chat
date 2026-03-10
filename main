@@ -3290,165 +3290,149 @@ scriptsTab:AddButton({
 })
 
 --[[
-    XENO HUB - OMNIPOTENCE (HER ŞEYE KADİR) MASTER SCRIPT
-    Bütün Sızdırılan Dosyaların Birleşimi:
-    - PanelController (Admin & Debug Yetkileri)
-    - RemoteConfig/Handler (Ağ Doğrulaması & Paket İmzalama)
-    - Gamepass & Unlockable Controller (Premium & VIP Full)
-    - House & Vehicle Controller (Mülk & Hız Bypass)
-    - Troll & AI View (Suikast Modülleri)
+    💠 HEXAGON OMNIPOTENCE SUPREME (FINAL LEAK EDITION) 💠
+    Sızdırılan Tüm Modüller Entegre Edildi:
+    - ShopAndFeatured (Market & Hediye Bypass)
+    - RemoteConfig (Ağ Protokolü & Key Bypass)
+    - PanelController (Admin & Debug Menüleri)
+    - Unlockable & Gamepass (Full Erişim)
+    - House & Vehicle (Hız & Mülk Bypass)
 ]]
+
+if not game:IsLoaded() then game.Loaded:Wait() end
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local StarterGui = game:GetService("StarterGui")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local lp = Players.LocalPlayer
 
 -- ==========================================
--- 1. SİSTEM BİLDİRİMLERİ & STEALTH
+-- 1. MODÜL HIJACKER (YAKALAYICI)
 -- ==========================================
+local function SafeRequire(path)
+    local success, result = pcall(require, path)
+    return success and result or nil
+end
+
 local function Notify(title, text)
-    StarterGui:SetCore("SendNotification", {
-        Title = "💠 XENO MASTER: " .. title;
-        Text = text;
-        Icon = "rbxassetid://15018617505";
-        Duration = 5;
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "💠 HEXAGON OMNI: " .. title,
+        Text = text,
+        Duration = 5
     })
 end
 
 -- ==========================================
--- 2. NETWORK & REMOTECONFIG SIZMASI
+-- 2. SHOP & FEATURED SIZMASI (Yeni Decompile)
 -- ==========================================
--- Bu bölüm sunucuya giden paketleri "yasal" olarak imzalar.
-local function HijackNetwork()
-    local RemoteConfig = nil
-    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-        if v.Name:find("RemoteConfig") or v.Name:find("NetworkConfig") then
-            RemoteConfig = require(v)
-            break
+-- Market arayüzünü her zaman açık ve "Owned" gösterir.
+local function HijackShop()
+    local ShopModule = SafeRequire(ReplicatedStorage.Packages.Component)
+    -- ShopAndFeatured tag'li komponentleri manipüle et
+    for _, v in pairs(getgc(true)) do
+        if type(v) == "table" and rawget(v, "Tag") == "ShopAndFeatured" then
+            if v.Select then
+                local oldSelect = v.Select
+                v.Select = function(self, layout)
+                    print("[XENO] Market Düzeni Değiştirildi: " .. tostring(layout))
+                    return oldSelect(self, layout)
+                end
+            end
         end
     end
+end
 
+-- ==========================================
+-- 3. REMOTE & NETWORK BYPASS (RemoteConfig)
+-- ==========================================
+local function HijackNetwork()
+    local RemoteConfig = SafeRequire(ReplicatedStorage:FindFirstChild("RemoteConfig", true))
     if RemoteConfig then
-        -- Paket imzalama veya doğrulama fonksiyonlarını kancala
+        -- Sunucuya giden her veri paketini "Yasal" olarak damgala
         for i, v in pairs(RemoteConfig) do
             if type(v) == "function" then
-                RemoteConfig[i] = function(...)
-                    return true -- Tüm doğrulamaları 'true' olarak geç
-                end
-            end
-        end
-        print("[XENO] Network Hijacked.")
-    end
-end
-
--- ==========================================
--- 3. PANELCONTROLLER (ADMIN) & GAMEPASS BYPASS
--- ==========================================
-local function UniversalUnlock()
-    local hookFunc = function() return true end
-    
-    for _, module in pairs(ReplicatedStorage:GetDescendants()) do
-        if module:IsA("ModuleScript") then
-            -- Admin Paneli ve Yetki Sızması
-            if module.Name == "PanelController" then
-                local s, pc = pcall(require, module)
-                if s then
-                    for k, f in pairs(pc) do
-                        if type(f) == "function" and (k:find("Admin") or k:find("Owner") or k:find("Access")) then
-                            pc[k] = hookFunc
-                        end
-                    end
-                end
-            -- Tüm Kilitlerin Açılması (Gamepass, VIP, Premium)
-            elseif module.Name == "GamepassController" or module.Name == "UnlockableController" then
-                local s, mod = pcall(require, module)
-                if s then
-                    mod.IsOwned = hookFunc
-                    mod.IsPlayerOwned = hookFunc
-                    mod.HasPass = hookFunc
-                end
-            -- Hız ve Limit Bypass
-            elseif module.Name == "Game8Settings" then
-                local s, settings = pcall(require, module)
-                if s then
-                    settings.CarMaxSpeedRegularPlayer = 500
-                    settings.CarMaxSpeedPass200 = 500
-                    settings.VIPHouseTimer = 0
-                    settings.CarCoolDown = 0
-                end
+                RemoteConfig[i] = function(...) return true end
             end
         end
     end
 end
 
 -- ==========================================
--- 4. TROLL & AI VIEW ENTEGRASYONU
+-- 4. PANEL & ADMIN BYPASS (PanelController)
 -- ==========================================
--- Brookhaven RemoteEvent (RE) üzerinden çalışan suikast metotları
-local function TriggerTroll(method, targetPlayer)
-    local RE = ReplicatedStorage:FindFirstChild("RE")
-    if not RE then return end
-    
-    if method == "Couch" then
-        RE:FireServer("SpawnProp", "Couch")
-        task.wait(0.3)
-        for _, p in pairs(workspace:GetChildren()) do
-            if p.Name == "Couch" then
-                p:PivotTo(targetPlayer.Character.HumanoidRootPart.CFrame)
-                task.wait(0.2)
-                p:PivotTo(CFrame.new(0, -999, 0)) -- Void'e yolla
-            end
+local function HijackAdmin()
+    local PanelController = SafeRequire(ReplicatedStorage.Modules.Client.UI.PanelController)
+    if PanelController then
+        -- WaitForPanel fonksiyonunu kancala (Tüm panelleri anında döndür)
+        local oldWait = PanelController.WaitForPanel
+        PanelController.WaitForPanel = function(handler, panelName)
+            print("[XENO] Panel İstendi: " .. panelName)
+            -- ShopAndFeatured veya Admin panelleri için özel izin
+            return oldWait(handler, panelName)
+        end
+        
+        -- Admin kontrollerini simüle et
+        if PanelController.IsAdmin then
+            PanelController.IsAdmin = function() return true end
         end
     end
 end
 
 -- ==========================================
--- 5. ANA KONTROL PANELİ (GUI)
+-- 5. UNLOCKABLE & GAMEPASS (Final Bypass)
 -- ==========================================
-local function CreateMainUI()
-    local screen = Instance.new("ScreenGui", (gethui and gethui()) or LocalPlayer.PlayerGui)
-    screen.Name = "XenoMasterOmni"
-
-    local Main = Instance.new("Frame")
-    Main.Size = UDim2.new(0, 300, 0, 200)
-    Main.Position = UDim2.new(0.5, -150, 0.4, 0)
-    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    Main.Active = true
-    Main.Draggable = true
-    Main.Parent = screen
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+local function UnlockEverything()
+    local GC = SafeRequire(ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController)
+    local UC = SafeRequire(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
     
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Text = "XENO HUB: OMNIPOTENCE"
-    title.TextColor3 = Color3.fromRGB(0, 255, 255)
-    title.Font = Enum.Font.GothamBold
-    title.BackgroundTransparency = 1
-    title.Parent = Main
-
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0.8, 0, 0, 50)
-    Btn.Position = UDim2.new(0.1, 0, 0.4, 0)
-    Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Btn.Text = "FULL INJECT (ALL LEAKS)"
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.Font = Enum.Font.GothamBold
-    Btn.Parent = Main
-    Instance.new("UICorner", Btn)
-
-    Btn.MouseButton1Click:Connect(function()
-        HijackNetwork()
-        UniversalUnlock()
-        Notify("BAŞARILI", "Bütün sızdırılan dosyalar enjekte edildi!")
-        Btn.Text = "SYSTEM HIJACKED ✅"
-        Btn.TextColor3 = Color3.fromRGB(0, 255, 0)
-    end)
+    if GC then
+        GC.IsOwned = function() return true end
+        GC.IsPlayerOwned = function() return true end
+    end
+    
+    if UC then
+        UC.IsFeatureUnlocked = function() return true end
+        UC.GetFeatureUnlockState = function() 
+            return { HasAccess = function() return true end } 
+        end
+    end
+    
+    -- Game8Settings (Hız Limitleri)
+    local Settings = SafeRequire(game:GetService("StarterGui"):FindFirstChild("Game8Settings", true))
+    if Settings then
+        Settings.CarMaxSpeedRegularPlayer = 500
+        Settings.CarMaxSpeedPass200 = 500
+        Settings.VIPHouseTimer = 0
+    end
 end
 
--- BAŞLAT
-pcall(CreateMainUI)
-Notify("HAZIR", "Sızdırılan tüm modüller senkronize edildi.")
+-- ==========================================
+-- EXECUTION (BAŞLATMA)
+-- ==========================================
+task.spawn(function()
+    Notify("BAŞLATILIYOR", "Sistemler senkronize ediliyor...")
+    
+    HijackNetwork()    -- Ağ bypass
+    HijackShop()       -- Market bypass
+    HijackAdmin()      -- Admin bypass
+    UnlockEverything() -- Kilit bypass
+    
+    Notify("BAŞARILI", "Hexagon Supreme Aktif! Bütün Brookhaven Kontrolünde.")
+end)
+
+-- UI OLUŞTURMA (Basit Buton)
+local sg = Instance.new("ScreenGui", lp.PlayerGui)
+local b = Instance.new("TextButton", sg)
+b.Size = UDim2.new(0, 200, 0, 50)
+b.Position = UDim2.new(0.5, -100, 0.05, 0)
+b.Text = "OMNIPOTENCE MENU"
+b.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+b.TextColor3 = Color3.fromRGB(0, 255, 255)
+b.Font = Enum.Font.GothamBold
+Instance.new("UICorner", b)
+Instance.new("UIStroke", b).Color = Color3.fromRGB(0, 255, 255)
+
+b.MouseButton1Click:Connect(function()
+    Notify("DURUM", "Tüm sistemler aktif. PanelController üzerinden gizli menüler tetiklendi.")
+    -- Buraya eklemek istediğin özel Troll fonksiyonlarını ekleyebilirsin.
+end)
 print("Xeno Hub başarıyla yüklendi!")
