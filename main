@@ -3290,228 +3290,165 @@ scriptsTab:AddButton({
 })
 
 --[[
-    HEXAGON ULTIMATE GOD PANEL v5.5 (BROOKHAVEN SPECIAL)
-    Byfron/Hyperion Stealth + Voldex Patch Bypass
-    Target: EgeKazak_Real1
+    XENO HUB - OMNIPOTENCE (HER ŞEYE KADİR) MASTER SCRIPT
+    Bütün Sızdırılan Dosyaların Birleşimi:
+    - PanelController (Admin & Debug Yetkileri)
+    - RemoteConfig/Handler (Ağ Doğrulaması & Paket İmzalama)
+    - Gamepass & Unlockable Controller (Premium & VIP Full)
+    - House & Vehicle Controller (Mülk & Hız Bypass)
+    - Troll & AI View (Suikast Modülleri)
 ]]
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local UserInputService = game:GetService("UserInputService")
-local StarterGui = game:GetService("StarterGui")
-
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local TARGET_NAME = "EgeKazak_Real1"
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 -- ==========================================
--- GÜVENLİK VE BYPASS MOTORU
+-- 1. SİSTEM BİLDİRİMLERİ & STEALTH
 -- ==========================================
-local function InitialBypass()
-    -- Byfron & Anti-Cheat Shield
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
-
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-
-        if method == "FireServer" and self.Name == "RE" then
-            local action = tostring(args[1])
-            -- Tehlikeli sinyalleri sustur
-            if action:match("Ban") or action:match("Kick") or action:match("Log") or action:match("Check") then
-                return nil 
-            end
-        end
-        if method == "Kick" then return task.wait(9e9) end
-        return oldNamecall(self, ...)
-    end)
-    setreadonly(mt, true)
-
-    -- Modül Yamaları (Voldex & Gamepass)
-    task.spawn(function()
-        local hookTrue = function() return true end
-        for _, module in pairs(getloadedmodules()) do
-            -- Sahiplik Kontrolleri
-            if module.Name == "GamepassController" or module.Name == "UnlockableController" then
-                local s, mod = pcall(require, module)
-                if s and type(mod) == "table" then
-                    mod.IsPlayerOwned = hookTrue
-                    mod.IsOwned = hookTrue
-                    mod.HasPass = hookTrue
-                    mod.CanAccess = hookTrue
-                end
-            end
-            -- Araç ve Ayar Yamaları
-            if module.Name == "AdFeatures" or module.Name == "Game8Settings" then
-                local s, mod = pcall(require, module)
-                if s and type(mod) == "table" then
-                    if mod.Vehicles then
-                        local oldV = mod.Vehicles
-                        mod.Vehicles = function(...)
-                            local v = oldV(...)
-                            for _, car in pairs(v) do car.gamepass = nil end
-                            return v
-                        end
-                    end
-                    mod.AllPassFetched = true
-                    mod.CarMaxSpeedPass200 = 450
-                    mod.CarCoolDown = 0
-                    mod.VIPCarCoolDown = 0
-                end
-            end
-        end
-    end)
+local function Notify(title, text)
+    StarterGui:SetCore("SendNotification", {
+        Title = "💠 XENO MASTER: " .. title;
+        Text = text;
+        Icon = "rbxassetid://15018617505";
+        Duration = 5;
+    })
 end
 
 -- ==========================================
--- MODERN GOD PANEL ARAYÜZÜ
+-- 2. NETWORK & REMOTECONFIG SIZMASI
 -- ==========================================
-local function CreateGodPanel()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "HexagonGodPanel"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = (gethui and gethui()) or CoreGui
-
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 300, 0, 380)
-    MainFrame.Position = UDim2.new(0.5, -150, 0.4, -190)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Active = true
-    MainFrame.Draggable = true -- Klasik sürükleme
-    MainFrame.Parent = screenGui
-
-    -- Tasarım: Köşeler ve Çerçeve
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-    local stroke = Instance.new("UIStroke", MainFrame)
-    stroke.Color = Color3.fromRGB(0, 255, 255)
-    stroke.Thickness = 2
-
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 45)
-    Title.BackgroundTransparency = 1
-    Title.Text = "HEXAGON GOD PANEL v5.5"
-    Title.TextColor3 = Color3.fromRGB(0, 255, 255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 16
-    Title.Parent = MainFrame
-
-    local SubTitle = Instance.new("TextLabel")
-    SubTitle.Size = UDim2.new(1, 0, 0, 20)
-    SubTitle.Position = UDim2.new(0, 0, 0, 35)
-    SubTitle.BackgroundTransparency = 1
-    SubTitle.Text = "Kullanıcı: " .. TARGET_NAME
-    SubTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-    SubTitle.Font = Enum.Font.Gotham
-    SubTitle.TextSize = 11
-    SubTitle.Parent = MainFrame
-
-    local List = Instance.new("ScrollingFrame")
-    List.Size = UDim2.new(1, -20, 1, -80)
-    List.Position = UDim2.new(0, 10, 0, 70)
-    List.BackgroundTransparency = 1
-    List.CanvasSize = UDim2.new(0, 0, 0, 500)
-    List.ScrollBarThickness = 2
-    List.Parent = MainFrame
-
-    local layout = Instance.new("UIListLayout", List)
-    layout.Padding = UDim.new(0, 8)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-    -- Buton Oluşturucu Fonksiyon
-    local function CreateButton(txt, callback)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 260, 0, 40)
-        btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        btn.Text = txt
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.GothamMedium
-        btn.TextSize = 13
-        btn.AutoButtonColor = true
-        btn.Parent = List
-        
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-        local s = Instance.new("UIStroke", btn)
-        s.Color = Color3.fromRGB(40, 40, 60)
-        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-        btn.MouseButton1Click:Connect(function()
-            callback()
-            btn.BackgroundColor3 = Color3.fromRGB(0, 100, 100)
-            task.wait(0.2)
-            btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-        end)
+-- Bu bölüm sunucuya giden paketleri "yasal" olarak imzalar.
+local function HijackNetwork()
+    local RemoteConfig = nil
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v.Name:find("RemoteConfig") or v.Name:find("NetworkConfig") then
+            RemoteConfig = require(v)
+            break
+        end
     end
 
-    -- ÖZELLİKLER
-    CreateButton("FULL BYPASS AKTİF ET (BYFRON)", function()
-        InitialBypass()
-        StarterGui:SetCore("SendNotification", {Title = "Sistem", Text = "Bypass Motoru Yüklendi!", Duration = 3})
-    end)
-
-    CreateButton("PREMIUM & VIP KİLİTLERİ AÇ", function()
-        pcall(function()
-            local data = ReplicatedStorage:FindFirstChild("PlayerData")
-            if data and data:FindFirstChild(LocalPlayer.Name) then
-                local passes = data[LocalPlayer.Name]:FindFirstChild("Gamepasses")
-                if passes then
-                    for _, v in pairs(passes:GetChildren()) do v.Value = true end
-                end
-                data[LocalPlayer.Name].VIP.Value = true
-                data[LocalPlayer.Name].Premium.Value = true
-            end
-        end)
-        -- UI Kilitlerini Temizle
-        for _, v in pairs(LocalPlayer.PlayerGui:GetDescendants()) do
-            if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Star") then v.Visible = false end
-        end
-    end)
-
-    CreateButton("MAX HIZ & NO COOLDOWN", function()
-        -- Hız limitlerini zorla
-        task.spawn(function()
-            while task.wait(1) do
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("Humanoid") then
-                    char.Humanoid.WalkSpeed = 32
+    if RemoteConfig then
+        -- Paket imzalama veya doğrulama fonksiyonlarını kancala
+        for i, v in pairs(RemoteConfig) do
+            if type(v) == "function" then
+                RemoteConfig[i] = function(...)
+                    return true -- Tüm doğrulamaları 'true' olarak geç
                 end
             end
-        end)
-    end)
-
-    CreateButton("RAINBOW CHAT & VIP TAG", function()
-        local RE = ReplicatedStorage:FindFirstChild("RE")
-        if RE then
-            pcall(function() RE:FireServer("Pelis", "Check") end)
-            pcall(function() RE:FireServer("UpdateChatTags", {TagText = "GOD", TagColor = "#00FFFF"}) end)
         end
-    end)
+        print("[XENO] Network Hijacked.")
+    end
+end
 
-    CreateButton("TÜM ARSALARI/EVLERİ AÇ (ESTATES)", function()
-        -- Estates & Themes Unlocker
-        pcall(function()
-            local module = ReplicatedStorage.Modules.Client.PlayerData.UnlockableController
-            local mod = require(module)
-            mod.IsOwned = function() return true end
-        end)
-    end)
-
-    CreateButton("PANELİ GİZLE (L tuşu ile geri aç)", function()
-        MainFrame.Visible = false
-    end)
-
-    -- Kısayol Tuşu (L)
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == Enum.KeyCode.L then
-            MainFrame.Visible = not MainFrame.Visible
+-- ==========================================
+-- 3. PANELCONTROLLER (ADMIN) & GAMEPASS BYPASS
+-- ==========================================
+local function UniversalUnlock()
+    local hookFunc = function() return true end
+    
+    for _, module in pairs(ReplicatedStorage:GetDescendants()) do
+        if module:IsA("ModuleScript") then
+            -- Admin Paneli ve Yetki Sızması
+            if module.Name == "PanelController" then
+                local s, pc = pcall(require, module)
+                if s then
+                    for k, f in pairs(pc) do
+                        if type(f) == "function" and (k:find("Admin") or k:find("Owner") or k:find("Access")) then
+                            pc[k] = hookFunc
+                        end
+                    end
+                end
+            -- Tüm Kilitlerin Açılması (Gamepass, VIP, Premium)
+            elseif module.Name == "GamepassController" or module.Name == "UnlockableController" then
+                local s, mod = pcall(require, module)
+                if s then
+                    mod.IsOwned = hookFunc
+                    mod.IsPlayerOwned = hookFunc
+                    mod.HasPass = hookFunc
+                end
+            -- Hız ve Limit Bypass
+            elseif module.Name == "Game8Settings" then
+                local s, settings = pcall(require, module)
+                if s then
+                    settings.CarMaxSpeedRegularPlayer = 500
+                    settings.CarMaxSpeedPass200 = 500
+                    settings.VIPHouseTimer = 0
+                    settings.CarCoolDown = 0
+                end
+            end
         end
+    end
+end
+
+-- ==========================================
+-- 4. TROLL & AI VIEW ENTEGRASYONU
+-- ==========================================
+-- Brookhaven RemoteEvent (RE) üzerinden çalışan suikast metotları
+local function TriggerTroll(method, targetPlayer)
+    local RE = ReplicatedStorage:FindFirstChild("RE")
+    if not RE then return end
+    
+    if method == "Couch" then
+        RE:FireServer("SpawnProp", "Couch")
+        task.wait(0.3)
+        for _, p in pairs(workspace:GetChildren()) do
+            if p.Name == "Couch" then
+                p:PivotTo(targetPlayer.Character.HumanoidRootPart.CFrame)
+                task.wait(0.2)
+                p:PivotTo(CFrame.new(0, -999, 0)) -- Void'e yolla
+            end
+        end
+    end
+end
+
+-- ==========================================
+-- 5. ANA KONTROL PANELİ (GUI)
+-- ==========================================
+local function CreateMainUI()
+    local screen = Instance.new("ScreenGui", (gethui and gethui()) or LocalPlayer.PlayerGui)
+    screen.Name = "XenoMasterOmni"
+
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.new(0, 300, 0, 200)
+    Main.Position = UDim2.new(0.5, -150, 0.4, 0)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    Main.Active = true
+    Main.Draggable = true
+    Main.Parent = screen
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Text = "XENO HUB: OMNIPOTENCE"
+    title.TextColor3 = Color3.fromRGB(0, 255, 255)
+    title.Font = Enum.Font.GothamBold
+    title.BackgroundTransparency = 1
+    title.Parent = Main
+
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(0.8, 0, 0, 50)
+    Btn.Position = UDim2.new(0.1, 0, 0.4, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    Btn.Text = "FULL INJECT (ALL LEAKS)"
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.GothamBold
+    Btn.Parent = Main
+    Instance.new("UICorner", Btn)
+
+    Btn.MouseButton1Click:Connect(function()
+        HijackNetwork()
+        UniversalUnlock()
+        Notify("BAŞARILI", "Bütün sızdırılan dosyalar enjekte edildi!")
+        Btn.Text = "SYSTEM HIJACKED ✅"
+        Btn.TextColor3 = Color3.fromRGB(0, 255, 0)
     end)
 end
 
--- Başlat
-CreateGodPanel()
-print("Hexagon God Panel v5.5 Başlatıldı - L tuşu ile paneli açıp kapatabilirsin.")
+-- BAŞLAT
+pcall(CreateMainUI)
+Notify("HAZIR", "Sızdırılan tüm modüller senkronize edildi.")
 print("Xeno Hub başarıyla yüklendi!")
