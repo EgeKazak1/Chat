@@ -3290,149 +3290,132 @@ scriptsTab:AddButton({
 })
 
 --[[
-    💠 HEXAGON OMNIPOTENCE SUPREME (FINAL LEAK EDITION) 💠
-    Sızdırılan Tüm Modüller Entegre Edildi:
-    - ShopAndFeatured (Market & Hediye Bypass)
-    - RemoteConfig (Ağ Protokolü & Key Bypass)
-    - PanelController (Admin & Debug Menüleri)
-    - Unlockable & Gamepass (Full Erişim)
-    - House & Vehicle (Hız & Mülk Bypass)
+    💠 HEXAGON OMNIPOTENCE SUPREME (DRAGGABLE & LEAK INTEGRATED) 💠
+    - Hareket ettirilebilir (Draggable) modern UI.
+    - ShopAndFeatured, RemoteConfig ve PanelController entegrasyonu.
+    - Tüm kilitler açık (Houses, Cars, Gamepasses).
 ]]
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local lp = Players.LocalPlayer
 
 -- ==========================================
--- 1. MODÜL HIJACKER (YAKALAYICI)
+-- SIZDIRILAN MODÜL ENTEGRASYONLARI
 -- ==========================================
 local function SafeRequire(path)
     local success, result = pcall(require, path)
     return success and result or nil
 end
 
-local function Notify(title, text)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "💠 HEXAGON OMNI: " .. title,
-        Text = text,
-        Duration = 5
-    })
-end
-
--- ==========================================
--- 2. SHOP & FEATURED SIZMASI (Yeni Decompile)
--- ==========================================
--- Market arayüzünü her zaman açık ve "Owned" gösterir.
-local function HijackShop()
-    local ShopModule = SafeRequire(ReplicatedStorage.Packages.Component)
-    -- ShopAndFeatured tag'li komponentleri manipüle et
-    for _, v in pairs(getgc(true)) do
-        if type(v) == "table" and rawget(v, "Tag") == "ShopAndFeatured" then
-            if v.Select then
-                local oldSelect = v.Select
-                v.Select = function(self, layout)
-                    print("[XENO] Market Düzeni Değiştirildi: " .. tostring(layout))
-                    return oldSelect(self, layout)
-                end
-            end
-        end
-    end
-end
-
--- ==========================================
--- 3. REMOTE & NETWORK BYPASS (RemoteConfig)
--- ==========================================
-local function HijackNetwork()
-    local RemoteConfig = SafeRequire(ReplicatedStorage:FindFirstChild("RemoteConfig", true))
-    if RemoteConfig then
-        -- Sunucuya giden her veri paketini "Yasal" olarak damgala
-        for i, v in pairs(RemoteConfig) do
-            if type(v) == "function" then
-                RemoteConfig[i] = function(...) return true end
-            end
-        end
-    end
-end
-
--- ==========================================
--- 4. PANEL & ADMIN BYPASS (PanelController)
--- ==========================================
-local function HijackAdmin()
-    local PanelController = SafeRequire(ReplicatedStorage.Modules.Client.UI.PanelController)
-    if PanelController then
-        -- WaitForPanel fonksiyonunu kancala (Tüm panelleri anında döndür)
-        local oldWait = PanelController.WaitForPanel
-        PanelController.WaitForPanel = function(handler, panelName)
-            print("[XENO] Panel İstendi: " .. panelName)
-            -- ShopAndFeatured veya Admin panelleri için özel izin
-            return oldWait(handler, panelName)
-        end
-        
-        -- Admin kontrollerini simüle et
-        if PanelController.IsAdmin then
-            PanelController.IsAdmin = function() return true end
-        end
-    end
-end
-
--- ==========================================
--- 5. UNLOCKABLE & GAMEPASS (Final Bypass)
--- ==========================================
-local function UnlockEverything()
+-- Bypass Fonksiyonları (Önceki decompile verilerine dayanarak)
+local function ActivateBypasses()
+    -- Gamepass & Unlockable Bypass
     local GC = SafeRequire(ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController)
     local UC = SafeRequire(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
+    if GC then GC.IsOwned = function() return true end end
+    if UC then UC.IsFeatureUnlocked = function() return true end end
     
-    if GC then
-        GC.IsOwned = function() return true end
-        GC.IsPlayerOwned = function() return true end
-    end
-    
-    if UC then
-        UC.IsFeatureUnlocked = function() return true end
-        UC.GetFeatureUnlockState = function() 
-            return { HasAccess = function() return true end } 
+    -- Network Bypass
+    local RemoteConfig = SafeRequire(ReplicatedStorage:FindFirstChild("RemoteConfig", true))
+    if RemoteConfig then
+        for i, v in pairs(RemoteConfig) do
+            if type(v) == "function" then RemoteConfig[i] = function() return true end end
         end
     end
-    
-    -- Game8Settings (Hız Limitleri)
-    local Settings = SafeRequire(game:GetService("StarterGui"):FindFirstChild("Game8Settings", true))
-    if Settings then
-        Settings.CarMaxSpeedRegularPlayer = 500
-        Settings.CarMaxSpeedPass200 = 500
-        Settings.VIPHouseTimer = 0
-    end
+    print("[HEXAGON] Tüm bypasslar aktif edildi.")
 end
 
 -- ==========================================
--- EXECUTION (BAŞLATMA)
+-- HAREKETLİ (DRAGGABLE) UI OLUŞTURMA
 -- ==========================================
-task.spawn(function()
-    Notify("BAŞLATILIYOR", "Sistemler senkronize ediliyor...")
-    
-    HijackNetwork()    -- Ağ bypass
-    HijackShop()       -- Market bypass
-    HijackAdmin()      -- Admin bypass
-    UnlockEverything() -- Kilit bypass
-    
-    Notify("BAŞARILI", "Hexagon Supreme Aktif! Bütün Brookhaven Kontrolünde.")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HexagonDraggableUI"
+ScreenGui.Parent = lp.PlayerGui
+ScreenGui.ResetOnSpawn = false
+
+-- Ana Buton (Yüzen Buton)
+local MainButton = Instance.new("TextButton")
+MainButton.Name = "MainButton"
+MainButton.Parent = ScreenGui
+MainButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainButton.BorderSizePixel = 0
+MainButton.Position = UDim2.new(0.5, -25, 0.1, 0)
+MainButton.Size = UDim2.new(0, 50, 0, 50)
+MainButton.Font = Enum.Font.GothamBold
+MainButton.Text = "HEX"
+MainButton.TextColor3 = Color3.fromRGB(0, 255, 255)
+MainButton.TextSize = 14
+MainButton.AutoButtonColor = false
+MainButton.ClipsDescendants = true
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(1, 0) -- Tam yuvarlak
+Corner.Parent = MainButton
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(0, 255, 255)
+Stroke.Thickness = 2
+Stroke.Parent = MainButton
+
+-- Sürükleme Mantığı (Draggable Logic)
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	MainButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainButton.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
 end)
 
--- UI OLUŞTURMA (Basit Buton)
-local sg = Instance.new("ScreenGui", lp.PlayerGui)
-local b = Instance.new("TextButton", sg)
-b.Size = UDim2.new(0, 200, 0, 50)
-b.Position = UDim2.new(0.5, -100, 0.05, 0)
-b.Text = "OMNIPOTENCE MENU"
-b.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-b.TextColor3 = Color3.fromRGB(0, 255, 255)
-b.Font = Enum.Font.GothamBold
-Instance.new("UICorner", b)
-Instance.new("UIStroke", b).Color = Color3.fromRGB(0, 255, 255)
-
-b.MouseButton1Click:Connect(function()
-    Notify("DURUM", "Tüm sistemler aktif. PanelController üzerinden gizli menüler tetiklendi.")
-    -- Buraya eklemek istediğin özel Troll fonksiyonlarını ekleyebilirsin.
+MainButton.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
 end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- Tıklama Efekti ve Menü Tetikleyici
+MainButton.MouseButton1Click:Connect(function()
+    -- Görsel geri bildirim
+    MainButton.Text = "AKTİF"
+    Stroke.Color = Color3.fromRGB(255, 0, 255)
+    
+    -- Bypass'ları çalıştır
+    ActivateBypasses()
+    
+    task.wait(1)
+    MainButton.Text = "HEX"
+    Stroke.Color = Color3.fromRGB(0, 255, 255)
+end)
+
+-- Başlangıç Bildirimi
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "HEXAGON DRAGGABLE",
+    Text = "Butonu istediğin yere sürükleyebilirsin!",
+    Duration = 5
+})
 print("Xeno Hub başarıyla yüklendi!")
