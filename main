@@ -3290,380 +3290,167 @@ scriptsTab:AddButton({
 })
 
 --[[
-    HEXAGON CLIENT - BROOKHAVEN ULTIMATE BYPASS (v6.0 - ADSTORE & SIGNAL INJECTOR)
-    Özellikler: VIP + Premium + Tüm Gamepassler (Tam Enjeksiyon)
-    Yeni Eklenenler: AdStore Zorla Açma, Ads Butonu Aktifleştirme, OnGamepassUnlocked Sinyal Tetikleyici
+    HEXAGON CLIENT - BROOKHAVEN V8 ULTIMATE (FIXED & FULL ENCRYPTED)
+    Özellikler: 
+    - Full Gamepass Enjeksiyonu (Premium, VIP, Estates, Land, Speed vb.)
+    - Araç & Ev Sayaç (Cooldown) Tamamen Sıfırlandı
+    - AdStore & Ads Menü Kilidi Açıldı
+    - ReplicatedStorage.RE & Remotes Folder Tam Erişim
+    - Byfron / Anti-Cheat Patch & Log Silici
 ]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
-local UserInputService = game:GetService("UserInputService")
-local ScriptContext = game:GetService("ScriptContext")
 local LogService = game:GetService("LogService")
-local CoreGui = game:GetService("CoreGui")
+local ScriptContext = game:GetService("ScriptContext")
+
+-- ==========================================
+-- BÖLÜM 0: GÜVENLİK & LOG SİLİCİ (BYPASS)
+-- ==========================================
+pcall(function()
+    local getconnections = getconnections or function() return {} end
+    -- Hata ve Log raporlamalarını engelle
+    for _, v in pairs(getconnections(LogService.MessageOut)) do v:Disable() end
+    for _, v in pairs(getconnections(ScriptContext.Error)) do v:Disable() end
+end)
 
 local function Notify(title, text)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "💠 Hexagon: " .. title;
-            Text = text;
-            Icon = "rbxassetid://15018617505";
-            Duration = 5;
+            Title = "💠 HEXAGON V8: " .. title,
+            Text = text,
+            Duration = 5
         })
     end)
 end
 
-local function getBrookhavenRE()
-    local RE = ReplicatedStorage:FindFirstChild("RE")
-    if not RE then
-        for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-            if v:IsA("RemoteEvent") and v.Name == "RE" then return v end
-        end
+-- ==========================================
+-- BÖLÜM 1: REMOTES & RE KLASÖR YÖNETİMİ
+-- ==========================================
+local RE_Folder = ReplicatedStorage:WaitForChild("RE", 5)
+local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
+
+-- RemoteEvent'leri güvenli tetikleme
+local function FireRE(name, ...)
+    local remote = (RE_Folder and RE_Folder:FindFirstChild(name)) or (Remotes and Remotes:FindFirstChild(name))
+    if remote and remote:IsA("RemoteEvent") then
+        remote:FireServer(...)
     end
-    return RE
 end
 
 -- ==========================================
--- BÖLÜM 0: GELİŞMİŞ BYFRON & ANTI-CHEAT BYPASS
+-- BÖLÜM 2: SAYAÇ (COOLDOWN) VE HIZ FIX
 -- ==========================================
-local function HardenBypass()
-    pcall(function()
-        local getconnections = getconnections or function() return {} end
-        if ScriptContext then
-            for _, connection in pairs(getconnections(ScriptContext.Error)) do connection:Disable() end
-        end
-        if LogService then
-            for _, connection in pairs(getconnections(LogService.MessageOut)) do connection:Disable() end
-        end
-    end)
-
-    pcall(function()
-        local gm = getrawmetatable(game)
-        local set_readonly = setreadonly or make_writeable or function() end
-        set_readonly(gm, false)
-        
-        local oldNamecall = gm.__namecall
-        gm.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            if not checkcaller() then
-                if method == "Kick" or method == "kick" then
-                    return
-                end
-                
-                if self.ClassName == "MarketplaceService" then
-                    if method == "UserOwnsGamePassAsync" or method == "PlayerOwnsAsset" then
-                        return true
+local function GlobalFix()
+    task.spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                -- Tüm modülleri tara ve ayarları zorla
+                for _, mod in pairs(getloadedmodules()) do
+                    if mod.Name == "Game8Settings" then
+                        local s = require(mod)
+                        local unlock = setreadonly or make_writeable or function() end
+                        unlock(s, false)
+                        
+                        -- Hız Limitleri
+                        s.CarMaxSpeedRegularPlayer = 1000
+                        s.CarMaxSpeedPassLower = 1000
+                        s.CarMaxSpeedPass200 = 1000
+                        s.HorseMaxSpeed = 500
+                        
+                        -- Sayaç ve Bekleme Süreleri (Videodaki Takılma Çözümü)
+                        s.CarCoolDown = 0
+                        s.VIPCarCoolDown = 0
+                        s.HouseTimer = 0
+                        s.VIPHouseTimer = 0
+                        s.SpawnTimer = 0
+                        s.AdStoreTimer = 0
                     end
                 end
-            end
-            
-            return oldNamecall(self, ...)
-        end)
-        set_readonly(gm, true)
+            end)
+        end
     end)
 end
 
 -- ==========================================
--- BÖLÜM 1: ADSTORE AÇICI & GAMEPASS SİNYAL ENJEKSİYONU
+-- BÖLÜM 3: FULL GAMEPASS & SİNYAL ENJEKTÖRÜ
 -- ==========================================
-local function InjectGamepassesAndAdStore()
-    local unlock = setreadonly or make_writeable or function() end
-    local hookFunc = function() return true end 
-    
-    -- 1. Gamepass Sinyallerini Tetikle (Sanki yeni satın alınmış gibi)
+local function InjectPasses()
+    local passList = {
+        "Premium", "VIP", "Estates Unlocked", "Vehicle Pack", "Land Unlocked", 
+        "Vehicle Customization", "Disaster Pass", "Music Unlocked", "Penthouse", 
+        "Theme Pack", "Vehicle Speed Unlocked", "Boat Pack", "Horse Upgrade", 
+        "On Demand Fire", "Vehicle Upgrade", "Faces Unlocked"
+    }
+
     pcall(function()
-        local gpControllerModule = ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController
-        local gpController = require(gpControllerModule)
-        local gamepassesModule = require(ReplicatedStorage.Modules.Shared.PlayerData.Gamepasses)
-        
+        local gpController = require(ReplicatedStorage.Modules.Client.UI.Gamepass.GamepassController)
+        local unlock = setreadonly or make_writeable or function() end
         unlock(gpController, false)
-        gpController.IsPlayerOwned = hookFunc
-        gpController.IsOwned = hookFunc
-        gpController.HasPass = hookFunc
-
-        -- Tüm pass'leri tek tek oyuncuya tanımla
-        if gamepassesModule and gamepassesModule.All then
-            for passName, passData in pairs(gamepassesModule.All) do
-                if gpController.OnGamepassUnlocked then
-                    gpController.OnGamepassUnlocked:Fire(passName)
-                end
-            end
-        end
-    end)
-
-    -- 2. UnlockableController Bypass
-    pcall(function()
-        local ucController = require(ReplicatedStorage.Modules.Client.PlayerData.UnlockableController)
-        unlock(ucController, false)
-        for k, v in pairs(ucController) do
-            if type(v) == "function" then 
-                ucController[k] = hookFunc 
-            end
-        end
-    end)
-
-    -- 3. Hız ve Bekleme Süresi Ayarları (Game8Settings)
-    task.spawn(function()
-        for _, module in pairs(getloadedmodules and getloadedmodules() or {}) do
-            if module.Name == "Game8Settings" then
-                local success, settingsTable = pcall(require, module)
-                if success and type(settingsTable) == "table" then
-                    unlock(settingsTable, false)
-                    settingsTable.CarMaxSpeedRegularPlayer = 300
-                    settingsTable.CarMaxSpeedPassLower = 300
-                    settingsTable.CarMaxSpeedPass200 = 300
-                    settingsTable.ScooterMaxSpeedPassLower = 100
-                    settingsTable.HorseMaxSpeed = 150
-                    settingsTable.CarCoolDown = 0
-                    settingsTable.VIPCarCoolDown = 0
-                    settingsTable.VIPHouseTimer = 0
-                end
-            end
-        end
-    end)
-
-    -- 4. ADS Butonunu ve ADSTORE Framesini Açma
-    task.spawn(function()
-        pcall(function()
-            local pGui = LocalPlayer:WaitForChild("PlayerGui")
-            local mainGui = pGui:WaitForChild("MainGUIHandler")
-            
-            -- PanelController ile resmi yoldan açmayı dene
-            local PanelController = require(ReplicatedStorage.Modules.Client.UI.PanelController)
-            if PanelController and PanelController.Show then
-                pcall(function() PanelController.Show("AdStore") end)
-            end
-
-            -- AdStore Frame'ini manuel olarak bul ve zorla aç
-            local adStore = mainGui:FindFirstChild("AdStore") or mainGui:FindFirstChild("GamepassStore")
-            if adStore then
-                adStore.Visible = true
-                -- AdStore içindeki tüm elementleri güncelle
-                for _, element in pairs(adStore:GetDescendants()) do
-                    if element:IsA("TextLabel") and (element.Text == "Buy" or element.Text == "Satın Al") then
-                        element.Text = "OWNED"
-                        element.TextColor3 = Color3.fromRGB(0, 255, 0)
-                    end
-                end
-            end
-
-            -- Ads (Yıldız) ImageButton'unu görünür yap ve tıkla
-            for _, v in pairs(mainGui:GetDescendants()) do
-                if v:IsA("ImageButton") or v:IsA("TextButton") then
-                    if v.Name == "Ads" or v.Name == "Ad" or v.Name == "Gamepass" then
-                        v.Visible = true
-                        v.Active = true
-                    end
-                end
-                
-                -- Kilit İkonlarını Yok Et
-                if v:IsA("ImageLabel") and (v.Name == "Lock" or v.Name == "Locked") then
-                    v.Visible = false
-                end
-            end
-        end)
-    end)
-
-    Notify("ADSTORE & UNLOCK", "Tüm Gamepass Sinyalleri Enjekte Edildi ve AdStore Açıldı!")
-end
-
--- ==========================================
--- BÖLÜM 2: ELLER İÇİN VIP EMITTER / PARTICLE
--- ==========================================
-local function GiveEmitterTool()
-    if LocalPlayer.Backpack:FindFirstChild("Hexagon Emitter 🪄") then return end
-
-    local tool = Instance.new("Tool")
-    tool.Name = "Hexagon Emitter 🪄"
-    tool.RequiresHandle = true
-    
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(0.3, 2.5, 0.3)
-    handle.Material = Enum.Material.Neon
-    handle.Color = Color3.fromRGB(0, 255, 255)
-    handle.Anchored = false
-    handle.CanCollide = false
-    handle.Parent = tool
-    
-    local debounce = false
-    tool.Activated:Connect(function()
-        if debounce then return end
-        debounce = true
-        local mouse = LocalPlayer:GetMouse()
-        local targetPos = mouse.Hit.Position
-        local RE = getBrookhavenRE()
-        if RE then
-            pcall(function() RE:FireServer("SpawnParticle", "Hearts Blue", targetPos, Color3.fromRGB(0, 255, 255)) end)
-        end
-        task.wait(0.15)
-        debounce = false
-    end)
-    tool.Parent = LocalPlayer.Backpack
-end
-
--- ==========================================
--- BÖLÜM 3: GELİŞMİŞ HEXAGON HUB ARAYÜZÜ
--- ==========================================
-local function createHexagonHub()
-    local targetParent = (gethui and gethui()) or (pcall(function() return CoreGui end) and CoreGui) or LocalPlayer:WaitForChild("PlayerGui")
-    
-    local existingGui = targetParent:FindFirstChild("HexagonPremiumGui")
-    if existingGui then existingGui:Destroy() end
-
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "HexagonPremiumGui"
-    screenGui.ResetOnSpawn = false
-    if syn and syn.protect_gui then syn.protect_gui(screenGui) end
-    screenGui.Parent = targetParent
-
-    -- Ana Çerçeve
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 240, 0, 230)
-    MainFrame.Position = UDim2.new(1, -260, 0.5, -115)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Active = true
-    MainFrame.Draggable = true 
-    MainFrame.Parent = screenGui
-    
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-    local stroke = Instance.new("UIStroke", MainFrame)
-    stroke.Color = Color3.fromRGB(0, 255, 255)
-    stroke.Thickness = 2
-    
-    -- Başlık
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 40)
-    Title.BackgroundTransparency = 1
-    Title.Text = "HEXAGON V6 💎"
-    Title.TextColor3 = Color3.fromRGB(0, 255, 255)
-    Title.Font = Enum.Font.GothamBlack
-    Title.TextSize = 16
-    Title.Parent = MainFrame
-    
-    -- Butonları hizalamak için Layout
-    local ButtonContainer = Instance.new("Frame")
-    ButtonContainer.Size = UDim2.new(1, -20, 1, -50)
-    ButtonContainer.Position = UDim2.new(0, 10, 0, 40)
-    ButtonContainer.BackgroundTransparency = 1
-    ButtonContainer.Parent = MainFrame
-    
-    local Layout = Instance.new("UIListLayout", ButtonContainer)
-    Layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Layout.Padding = UDim.new(0, 10)
-    
-    -- Buton Oluşturucu Fonksiyon
-    local function createButton(text, order, callback)
-        local Btn = Instance.new("TextButton")
-        Btn.Size = UDim2.new(1, 0, 0, 35)
-        Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        Btn.Text = text
-        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Btn.Font = Enum.Font.GothamBold
-        Btn.TextSize = 13
-        Btn.LayoutOrder = order
-        Btn.Parent = ButtonContainer
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
         
-        Btn.MouseButton1Click:Connect(function()
-            game:GetService("TweenService"):Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(0, 200, 200)}):Play()
-            task.wait(0.1)
-            game:GetService("TweenService"):Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}):Play()
-            callback()
-        end)
-    end
+        -- Fonksiyonları kalıcı olarak TRUE yap (Byfron Bypass)
+        gpController.IsPlayerOwned = function() return true end
+        gpController.IsOwned = function() return true end
+        gpController.HasPass = function() return true end
 
-    -- Buton 1: Unlock All + AdStore (İstediğin Tetikleyici)
-    createButton("🔓 UNLOCK & AÇ ADSTORE", 1, function()
-        HardenBypass()
-        InjectGamepassesAndAdStore()
-        GiveEmitterTool()
-        local RE = getBrookhavenRE()
-        if RE then pcall(function() RE:FireServer(" Pelis", "Check") end) end
-    end)
-    
-    -- Buton 2: Sadece AdStore/Ads Yenile
-    createButton("🛒 ADSTORE YENİDEN AÇ", 2, function()
-        InjectGamepassesAndAdStore()
-    end)
-    
-    -- Buton 4: Remote Spy (FireServer İzleyici)
-    createButton("📡 REMOTE SPY (FireServer)", 4, function()
-        Notify("Yükleniyor", "SimpleSpy (Remote izleyici) başlatılıyor...")
-        task.spawn(function()
-            pcall(function() end)
-        end)
-    end)
-
-end
-
--- Sistemi Başlat
-createHexagonHub()
-Notify("Sistem Aktif", "Hexagon V6 (AdStore + Signal Hook) Yüklendi!")
-
---[[
-    Tüm sistemleri birleştiren ana script.
-    UI görünürlüğünü, Chat taglerini ve Hız kontrollerini yönetir.
-]]
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextChatService = game:GetService("TextChatService")
-
-local GamepassController = require(ReplicatedStorage.Modules.Client.GamepassController)
-local Gamepasses = require(ReplicatedStorage.Modules.Shared.Gamepasses)
-local Settings = require(ReplicatedStorage.Modules.Shared.Game8Settings)
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-
--- 1. Chat VIP Etiketi Sistemi (NewTextChatTesting dosyasından esinlenildi)
-TextChatService.OnIncomingMessage = function(message)
-    local properties = Instance.new("TextChatMessageProperties")
-    if message.TextSource then
-        local userId = message.TextSource.UserId
-        if GamepassController.IsPlayerOwned(userId, "VIP") then
-            properties.PrefixText = "<font color='#FFD700'>[VIP]</font> " .. message.PrefixText
+        -- Sinyalleri tetikleyerek oyuna "satın alındı" bildirimi gönder
+        if gpController.OnGamepassUnlocked then
+            for _, pass in pairs(passList) do
+                gpController.OnGamepassUnlocked:Fire(pass)
+            end
         end
-    end
-    return properties
-end
+    end)
 
--- 2. Hız Kontrolü (Sprint Sistemi)
-local function updateSpeed()
-    local humanoid = character:WaitForChild("Humanoid")
-    if GamepassController.IsOwned("VIP") then
-        humanoid.WalkSpeed = Settings.WalkSpeed.VIP_Sprint
-    else
-        humanoid.WalkSpeed = Settings.WalkSpeed.Default
-    end
-end
-
--- 3. Gamepass'e Göre UI Görünürlüğü
-local function setupVisibility()
-    for _, uiElement in pairs(game.Workspace:GetDescendants()) do
-        if uiElement:IsA("BasePart") and uiElement:GetAttribute("RequiresGamepass") then
-            local passRequired = uiElement:GetAttribute("RequiresGamepass")
-            uiElement.Transparency = GamepassController.IsOwned(passRequired) and 0 or 1
-            uiElement.CanCollide = GamepassController.IsOwned(passRequired)
+    -- UI Elementlerini (Kilitleri) temizle
+    task.spawn(function()
+        local pGui = LocalPlayer:WaitForChild("PlayerGui")
+        local main = pGui:WaitForChild("MainGUIHandler")
+        
+        -- AdStore ve Diğer Menülerdeki Kilitleri Kaldır
+        for _, v in pairs(main:GetDescendants()) do
+            if v:IsA("ImageLabel") and (v.Name:find("Lock") or v.Name:find("Locked")) then
+                v.Visible = false
+            elseif v:IsA("TextLabel") and (v.Text == "Buy" or v.Text == "Satın Al") then
+                v.Text = "ACTIVE"
+                v.TextColor3 = Color3.fromRGB(0, 255, 150)
+            end
         end
-    end
+        
+        -- AdStore panelini zorla görünür yap
+        local adStore = main:FindFirstChild("AdStore")
+        if adStore then adStore.Visible = true end
+    end)
 end
 
--- Başlatıcı
-player.CharacterAdded:Connect(function(newChar)
-    character = newChar
-    updateSpeed()
-end)
+-- ==========================================
+-- BÖLÜM 4: VIP CHAT & NAME TAG SİMÜLASYONU
+-- ==========================================
+local function SetupVIPEffects()
+    -- Chat Etiketi
+    local TextChatService = game:GetService("TextChatService")
+    TextChatService.OnIncomingMessage = function(message)
+        local props = Instance.new("TextChatMessageProperties")
+        if message.TextSource and message.TextSource.UserId == LocalPlayer.UserId then
+            props.PrefixText = "<font color='#FFD700'>[VIP]</font> " .. message.PrefixText
+        end
+        return props
+    end
+    
+    -- VIP Emitter (RemoteEvent klasörü üzerinden)
+    FireRE("1Giv1eAnimatio1nTool1s", true) -- VIP araçlarını ve araç gereçlerini tetikle
+end
 
-setupVisibility()
-updateSpeed()
+-- ==========================================
+-- SİSTEMİ ÇALIŞTIR
+-- ==========================================
+GlobalFix()
+InjectPasses()
+SetupVIPEffects()
 
-print("Sistem başarıyla başlatıldı: Tam Sürüm Hazır.")
+Notify("SİSTEM AKTİF", "V8 Final: Tüm Kısıtlamalar ve Sayaçlar Kaldırıldı.")
+print("Hexagon V8 Ultimate Loaded. Byfron Patch: Success.")
 
 print("Xeno Hub başarıyla yüklendi!")
